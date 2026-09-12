@@ -1,0 +1,15 @@
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+
+# Common local artifacts
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+node_modules/
+dist/
+build/
+coverage/
+*.log
