@@ -32,6 +32,7 @@ flowchart LR
         EXEC[ARC-M1-006<br/>Execution gateway]
         REC[ARC-M1-007<br/>Recovery reconciler]
         DB[(Metadata store)]
+        BLOB[(Immutable blob store)]
     end
 
     subgraph FB[Fetch-broker OS identity]
@@ -62,12 +63,15 @@ flowchart LR
     API --> REC
     REPO --> DB
     GIT --> DB
+    GIT --> BLOB
     EXEC --> DB
+    EXEC --> BLOB
     REC --> DB
     REPO -->|authenticated local IPC| FETCH
     EXEC -->|authenticated local IPC| PROVIDER
-    REC -->|same domain ports| FETCH
-    REC -->|same domain ports| PROVIDER
+    REC -->|repository application port| REPO
+    REC -->|workspace application port| GIT
+    REC -->|sandbox application port| EXEC
     FETCH --> SECRET
     FETCH --> MIRROR
     FETCH --> REMOTE
@@ -96,7 +100,10 @@ with least-authority ports rather than a shared container holding every adapter.
 `ARC-M1-007`; the relational metadata store through restricted repositories.
 
 **Authority.** Application metadata and policy. It has typed broker clients but no Git
-credential, provider daemon socket, or provider credential.
+credential, provider daemon socket, or provider credential. The metadata and immutable
+blob roots are inside this OS-identity trust zone, but scoped adapters restrict blob
+write/read calls to the Git Workspace and Execution modules plus authorized operator
+retrieval paths. Task sandboxes never receive the blob root.
 
 **Failure behavior.** Reject invalid or stale requests without external effect. Once an
 external-operation intent is committed, return an operation reference even if the
@@ -176,11 +183,18 @@ container specifications, or application-database access.
 labels before create. A stale `(sandbox_uuid, generation)` is rejected, never retargeted.
 Ambiguous daemon outcomes are returned as `UNKNOWN_OUTCOME` for reconciliation.
 
+Ownership and operation identity must be established atomically in the provider create
+call, using labels in the create specification or a deterministic provider name. A
+provider unable to guarantee this declares the capability unsupported; the corresponding
+profile is ineligible.
+
 ### `ARC-M1-006` — Execution gateway
 
-**Responsibility.** Validate a Command Run or Test Run, bind it to an existing sandbox
-lease, dispatch typed `exec`, bound and persist output, handle timeout/cancellation, and
-mark results with their Workspace revision and environment conditions.
+**Responsibility.** Present the control plane's sandbox application port for interactive
+and recovery lifecycle calls. For execution, validate a Command Run or Test Run, bind it
+to an existing sandbox lease, dispatch typed `exec`, bound and persist output, handle
+timeout/cancellation, and mark results with their Workspace revision and environment
+conditions.
 
 **Inbound.** Operator-requested command/test execution in MVP1.
 
@@ -192,6 +206,8 @@ authority.
 **Failure behavior.** Reject stale leases or working directories outside the Workspace.
 Probe Git metadata at sandbox start; attach `GitMetadataUnavailable` to every affected
 result even when the command exits zero. Truncated output is explicit, never silent.
+After dispatch, an ambiguous execution is never retried automatically: the same command
+may still be running and is not idempotent merely because it has an `operation_id`.
 
 ### `ARC-M1-007` — Recovery reconciler
 
@@ -201,8 +217,9 @@ ports used by interactive operations.
 
 **Inbound.** Startup, scheduled reconciliation, and explicit operator retry.
 
-**Outbound dependencies.** Metadata repositories and the typed ports of
-`ARC-M1-002`–`ARC-M1-005`; it does not call adapters around policy.
+**Outbound dependencies.** Metadata repositories and the application ports of
+`ARC-M1-002`, `ARC-M1-003`, and `ARC-M1-006`. Those owners reach brokers through their
+normal typed ports; the reconciler does not call a broker around them.
 
 **Authority.** Recovery coordination. It cannot bypass lifecycle guards or delete a
 foreign/unattributed resource.
@@ -235,6 +252,7 @@ sibling workspaces, broker IPC, daemon endpoints, control-plane state, or Git cr
 | Commit graph, refs, base SHA | Git mirror | Repository and Workspace services | A successful fetch changes mirror refs; pinned Workspace base remains unchanged |
 | Working files and index | Workspace Git filesystem | Git Workspace Service | Any filesystem or Git mutation changes Workspace revision |
 | Product identity, intent, lifecycle, correlation | Relational metadata store | All control-plane modules | Only through the structurally enforced transactional write path |
+| Deployment ownership identity | Relational metadata store | Provider broker and reconciler | Explicit operator recovery only; never regenerated on restart or upgrade |
 | Provider resource presence | Current provider observation | Broker and reconciler | Every lifecycle request and reconciliation pass |
 | Filesystem resource presence | Current filesystem observation | Git Workspace Service and reconciler | Every relevant operation; unmounted root is `UNOBSERVABLE` |
 | Command logs and large diffs | Immutable blob store | Execution and review paths | Never mutated; superseded by a new referenced blob |
@@ -250,9 +268,16 @@ MVP1 may run all components on one trusted machine, but not under one authority:
 - the control plane, fetch broker, and provider broker use separate OS identities;
 - local IPC authenticates peers and is inaccessible from task sandboxes;
 - mirror, Workspace, credential, broker-runtime, and metadata roots are separate;
+- the immutable blob root remains inside the control-plane trust zone and is not mounted
+  into task sandboxes; raw output is treated as potentially secret-bearing;
 - only the fetch broker combines remote credential and mirror-write access;
 - only the provider broker combines profile catalogue and daemon access;
 - a task sandbox receives neither combination.
+
+`deployment_id` is generated once for an Agnest deployment and persisted in the metadata
+store. It remains stable across process restart and software upgrade. Losing it blocks
+automatic ownership decisions and starts an explicit operator-recovery procedure; the
+system never silently creates a replacement ID or relabels existing resources.
 
 Remote broker placement, Kubernetes, and distributed scheduling require later ADRs. A
 future transport must preserve the same authority and authenticated-caller properties;

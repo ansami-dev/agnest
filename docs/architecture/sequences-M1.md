@@ -54,13 +54,14 @@ sequenceDiagram
     Note over F,R: connection fails before result is delivered
     R->>D: mark intent UNKNOWN_OUTCOME
     R-->>R: schedule reconciliation
-    R->>F: observe(operation_id, expected refs)
-    F->>M: inspect refs and operation evidence
-    alt effect confirmed
-        F-->>R: APPLIED with observed refs
-    else effect absent
-        F-->>R: OBSERVED_ABSENT
+    R->>F: observe mirror availability
+    F->>M: inspect mirror availability
+    alt mirror available
+        F-->>R: OBSERVED_PRESENT
+        Note over R,F: Fetch has no attributable operation marker;<br/>retry is safe because fetch is idempotent
         R->>F: retry same operation_id
+        F->>M: fetch and observe resulting refs
+        F-->>R: APPLIED with post-fetch refs
     else mirror unavailable
         F-->>R: UNOBSERVABLE
     end
@@ -146,8 +147,10 @@ sequenceDiagram
 ```
 
 Timeout and cancellation produce explicit outcomes. A connection loss after dispatch is
-`UNKNOWN_OUTCOME`; the system does not blindly retarget or replay a possibly mutating
-command against a replacement generation.
+`UNKNOWN_OUTCOME`; the system does not automatically replay a possibly mutating command
+against either the same or a replacement generation. It blocks further execution on that
+generation until observation resolves the run or the operator explicitly resolves the
+ambiguity and creates a new intent.
 
 ## Stop, discard, or archive
 
@@ -160,8 +163,7 @@ sequenceDiagram
     participant W as Git workspace service
 
     O->>C: discard Workspace
-    C->>D: atomically verify no blocking unresolved intents
-    C->>D: commit StopSandbox intent
+    C->>D: atomically verify no blockers and commit StopSandbox intent
     C->>P: stop(sandbox UUID, generation, operation_id)
     P-->>C: observed stopped
     C->>D: record stop outcome
@@ -191,6 +193,7 @@ sequenceDiagram
     participant W as Git workspace service
     participant P as Provider broker
 
+    C->>D: load durable deployment_id
     C->>R: start reconciliation pass(deployment_id)
     R->>D: load unresolved intents and expected resources
     par observe filesystem
@@ -227,6 +230,7 @@ passes. A restart neither resets it nor counts as evidence by itself.
 | Worktree create interrupted | Git workspace service | Intent plus filesystem observation | Reconciler through Workspace port |
 | Provider create response lost | Provider broker | Intent plus provider labels/observation | Reconciler through Provider port |
 | Sandbox crashes | Provider broker observes; control plane owns lifecycle | Sandbox condition and operation history | Reconciler/operator |
-| Command transport lost | Execution gateway | `UNKNOWN_OUTCOME`; no automatic retarget | Operator/reconciler |
+| Command transport lost | Execution gateway | `UNKNOWN_OUTCOME`; no automatic retry or retarget | Operator/provider observation |
 | Metadata store unavailable | Control plane | No uncommitted external action may begin | Retry after store health returns |
 | Workspace root unavailable | Git workspace service | `UNOBSERVABLE`, never inferred absent | Reconciler after root returns |
+| Deployment identity missing | Control plane | Existing provider resources remain foreign/unmodified | Explicit operator recovery |

@@ -144,7 +144,7 @@ replace reading the canonical source.
 | **Repository Remote** | MVP1 | The remote endpoint and integration identity for a Repository. |
 | **Mirror** | MVP1 | The local bare Git object store used to create worktrees efficiently without repeated full clones. |
 | **Base Commit** | MVP1 | The exact commit SHA a Workspace was created from. Pinned and immutable for that Workspace (`FR-M1-004`). |
-| **Workspace Revision** | MVP4 | A hash identifying the exact working-tree state a review, test, or finding was produced against. Used to detect staleness. |
+| **Workspace Revision** | MVP1 | A deterministic identifier for the exact tracked, staged, and untracked working-tree state a status, diff, command, test, or later review was produced against. It is not the `HEAD` commit SHA. Used to detect staleness. |
 
 ## 3. Execution
 

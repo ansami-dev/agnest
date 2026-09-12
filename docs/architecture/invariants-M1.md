@@ -70,7 +70,9 @@ working-tree state.
 
 Status, diff, Command Run, and Test Run results record the revision they describe. A
 Workspace mutation makes earlier derived results stale; stale data is never returned as
-current.
+current. The revision changes for tracked-file content, index state, and untracked-file
+set/content changes; using only the current `HEAD` commit is invalid. Data Design owns
+the deterministic computation.
 
 ## Sandbox lifecycle and execution
 
@@ -115,7 +117,15 @@ outcome. If the intent cannot commit, the external action must not begin.
 
 Retries reuse `operation_id`; a later user intent gets a new one. Provider identity is
 `(deployment_id, workspace_id, generation, operation_id)` and is materialized as labels
-or deterministic names. A retry observes before create.
+or deterministic names in the same provider call that creates the resource. A provider
+that cannot establish identity atomically declares the capability unsupported. A retry
+observes before create.
+
+Execution is the exception to resource retry: after dispatch, a Command Run or Test Run
+with `UNKNOWN_OUTCOME` is never automatically dispatched again, even to the same
+generation. Further execution on that generation is blocked until provider observation
+resolves the run, or the operator explicitly resolves the ambiguity and accepts the
+effect of a new intent.
 
 ### M1-I18 — Operation state and resource observation do not mix
 
@@ -153,11 +163,25 @@ A worktree without matching metadata is quarantined and surfaced to an operator;
 never automatically deleted. A foreign or unlabeled provider resource is reported but
 never mutated.
 
+### M1-I24 — Raw output stays in the control-plane trust zone
+
+The immutable blob store is a control-plane adapter and filesystem root, not a task
+sandbox mount or separate authority. Only scoped Git Workspace and Execution adapters
+write blobs; authorized control-plane read paths retrieve them. Command/test output is
+treated as potentially secret-bearing, including when collection is truncated.
+
+### M1-I25 — Deployment ownership identity is durable
+
+`deployment_id` is persisted with orchestration metadata and remains stable across
+restart and upgrade. It is never derived from hostname, process ID, container ID, or a
+new startup random value. Loss blocks automatic mutation of existing provider resources
+and requires explicit operator recovery; resources are never silently relabeled.
+
 ## Verification matrix
 
 | Invariants | Primary verification |
 |---|---|
-| M1-I01–M1-I04 | Process identity/environment inspection, IPC authorization tests, sandbox network and mount denial tests, dependency-rule architecture test |
+| M1-I01–M1-I04, M1-I24–M1-I25 | Process identity/environment inspection, IPC authorization tests, sandbox network and mount denial tests, dependency-rule architecture test, blob-root access checks, deployment-identity restart/upgrade/loss tests |
 | M1-I05–M1-I10 | Git integration tests with two concurrent Workspaces, fetch during active work, path-escape fixtures, stale-result tests |
 | M1-I11–M1-I15 | Provider conformance suite, hostile profile/request fixtures, stale-generation test, timeout/cancellation/output tests, zero-exit Git-version fallback fixture |
 | M1-I16–M1-I21 | Database transaction tests, failpoint crash matrix, stop-start-stop identity test, projection drift injection, concurrency race tests |
