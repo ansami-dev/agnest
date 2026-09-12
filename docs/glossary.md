@@ -154,6 +154,14 @@ replace reading the canonical source.
 | **Command Run** | MVP1 | One command executed in a Sandbox, with stdout, stderr, exit code, timestamps, and timeout. |
 | **Test Run** | MVP1 | A named test command execution and its persisted result. |
 | **Workspace Confinement** | MVP1 | The rule that sandbox filesystem writes are limited to the assigned Workspace plus explicitly configured ephemeral paths (`FR-M1-010`). |
+| **Control Plane** | MVP1 | The trusted application process that authenticates operator intent, coordinates use cases, owns orchestration metadata, and calls privileged brokers only through typed ports (`ARC-M1-001`). |
+| **Repository Service** | MVP1 | The control-plane component that owns repository metadata and serializes bare-mirror refresh operations without receiving a Git credential (`ARC-M1-002`). |
+| **Git Workspace Service** | MVP1 | The host-side component that owns Workspace paths and performs local Git worktree, status, diff, stage, restore, quarantine, discard, and archive operations (`ARC-M1-003`). |
+| **Credentialed-Fetch Broker** | MVP1 | A separate least-authority process that holds a host-bound fetch credential and executes sanitized fetch into an approved bare mirror (`ARC-M1-004`). |
+| **Sandbox-Provider Broker** | MVP1 | A separate high-authority process that alone holds provider-daemon access and resolves server-owned confinement profiles (`ARC-M1-005`). |
+| **Execution Gateway** | MVP1 | The control-plane component that validates and audits bounded execution requests and dispatches them to an existing Sandbox generation (`ARC-M1-006`). |
+| **Recovery Reconciler** | MVP1 | The control-plane component that compares durable intent with attributed provider/filesystem observations and recovers through normal policy-enforcing ports (`ARC-M1-007`). |
+| **Task Sandbox** | MVP1 | The untrusted execution boundary for one assigned Workspace projection; it has no access to shared Git administration, broker IPC, provider authority, or control-plane credentials (`ARC-M1-008`). |
 
 ## 4. Orchestration
 
