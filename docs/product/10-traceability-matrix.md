@@ -80,7 +80,7 @@ The sequence is intentionally cumulative, but selected implementation work may p
 - MVP8: tenancy, policy, secret broker, SoD, audit, worker security.
 
 ### Integration
-- MVP1: Forgejo/GitHub read/fetch, Docker/LXC/VM contracts.
+- MVP1: Forgejo/GitHub read/fetch and local Incus system-container contract; OCI/VM modes are capability-gated.
 - MVP2: Hermes/Claude Code/Codex/OMP adapters and A2A mapping.
 - MVP3: orchestration events/A2A artifacts.
 - MVP4: Forgejo/GitHub write/PR/CI webhooks.

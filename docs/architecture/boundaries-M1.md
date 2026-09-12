@@ -3,7 +3,7 @@
 **Status:** Proposed  
 **Owner:** Architecture (Codex)  
 **Issue:** #7  
-**Decision:** `ADR-0003`  
+**Decisions:** `ADR-0003`, `ADR-0011`
 **Requirements:** `FR-M1-002`, `FR-M1-003`, `FR-M1-005`, `FR-M1-006`,
 `FR-M1-010`, `FR-M1-017`, `FR-M1-018`, `FR-M1-019`
 
@@ -42,7 +42,7 @@ flowchart LR
 
     subgraph PB[Provider-broker OS identity]
         PROVIDER[ARC-M1-005<br/>Sandbox-provider broker]
-        DAEMON[Docker or Incus daemon]
+        DAEMON[Local Incus daemon]
     end
 
     subgraph FS[Host Git filesystem]
@@ -165,8 +165,10 @@ a reusable credential outside its custody.
 ### `ARC-M1-005` — Sandbox-provider broker
 
 **Responsibility.** Resolve a trusted profile and perform provider lifecycle operations
-against Docker, Incus/LXC, or a future VM adapter. It materializes product ownership and
-operation identity as labels or deterministic provider names.
+against the Incus daemon local to the Agnest appliance VM. System containers are the
+required baseline; OCI application containers and Incus VMs are capability-gated
+instance kinds. It materializes product ownership and operation identity as Incus config
+keys or deterministic instance names.
 
 **Inbound.** Authenticated local IPC carrying product identities, generation,
 deployment ID, operation ID, and server-owned profile name. MVP1 typed `exec` also
@@ -176,12 +178,18 @@ output limit, and cancellation identity.
 **Outbound dependencies.** Provider daemon/API, trusted profile catalogue, and its
 broker-owned resource map.
 
-**Authority.** Provider-daemon authority. It never receives Git credentials, arbitrary
-container specifications, or application-database access.
+**Authority.** Provider-daemon authority. Only this broker's OS identity may hold
+`incus-admin` membership or an equivalent daemon grant; the control-plane and fetch-broker
+identities must not. It never receives Git credentials, arbitrary container
+specifications, or application-database access.
 
 **Failure behavior.** Unknown capability means unsupported. Retries observe by ownership
 labels before create. A stale `(sandbox_uuid, generation)` is rejected, never retargeted.
 Ambiguous daemon outcomes are returned as `UNKNOWN_OUTCOME` for reconciliation.
+Provider health is computed from daemon reachability and capabilities required by the
+system-container baseline. An unavailable optional OCI/VM kind is a capability fact, not
+overall degradation. Capability evidence is immutable, per instance kind, pinned by the
+Sandbox binding, and invalidated by expiry or daemon, adapter, or host-capability change.
 
 Ownership and operation identity must be established atomically in the provider create
 call, using labels in the create specification or a deterministic provider name. A

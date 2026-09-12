@@ -64,7 +64,7 @@ Product documents say Workspace. Say "worktree" only when discussing Git mechani
 | | |
 |---|---|
 | **Workspace** | Filesystem and Git state. Durable; may outlive any sandbox. |
-| **Sandbox** | The compute boundary — Docker, LXC, VM — hosting a harness and having the workspace attached. Ephemeral. |
+| **Sandbox** | The ephemeral compute boundary hosting a harness and having the Workspace attached. MVP1 uses a local Incus instance; future backends require a separate decision. |
 
 A Sandbox attaches to a Workspace; they are not two names for one thing. **Sandbox IDs
 are provider-scoped and must never become stable product identity** (MVP1 §9).
@@ -150,7 +150,7 @@ replace reading the canonical source.
 
 | Term | Introduced | Definition |
 |---|---|---|
-| **Sandbox Provider** | MVP1 | An implementation of the sandbox contract: Docker, LXC, VM. Declares its capabilities rather than pretending uniformity. |
+| **Sandbox Provider** | MVP1 | An implementation behind the sandbox contract. MVP1 implements local Incus only and treats system container, OCI application container, and VM as separately evidenced instance kinds rather than pretending uniformity. |
 | **Command Run** | MVP1 | One command executed in a Sandbox, with stdout, stderr, exit code, timestamps, and timeout. |
 | **Test Run** | MVP1 | A named test command execution and its persisted result. |
 | **Workspace Confinement** | MVP1 | The rule that sandbox filesystem writes are limited to the assigned Workspace plus explicitly configured ephemeral paths (`FR-M1-010`). |

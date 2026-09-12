@@ -15,7 +15,7 @@ The product solves this by combining four core ideas:
 3. **Context Intelligence** — repository-aware graph, lexical, semantic, and source retrieval that builds role-specific context packs instead of sending the whole repo.
 4. **Governed Delivery** — quality gates, human approvals, remote Git authority separation, auditability, token/cost telemetry, and policy-driven publication.
 
-The initial runtime focus is **Hermes, Claude Code, Codex, and OMP**. The initial sandbox focus is **Docker, LXC, and VM**. The initial remote Git focus is **Forgejo and GitHub**. The protocol direction is **A2A for agent interoperability** and **MCP for tools/data access**, with adapters where runtimes do not natively implement those protocols.
+The initial runtime focus is **Hermes, Claude Code, Codex, and OMP**. The MVP1 sandbox focus is **local Incus**, with a required system-container baseline and capability-gated OCI/VM modes; additional local or remote providers are demand-driven. The initial remote Git focus is **Forgejo and GitHub**. The protocol direction is **A2A for agent interoperability** and **MCP for tools/data access**, with adapters where runtimes do not natively implement those protocols.
 
 The long-term outcome is a platform where a user can connect a repository and issue, assign work to a persistent AI engineering team, watch each specialist operate in an isolated local workspace, inspect source-level changes and review findings, measure how much context and cost was avoided, and approve the final commit/push/PR only when satisfied.
 
@@ -116,7 +116,9 @@ The first supported harnesses are Hermes, Claude Code, Codex, and OMP. Product-d
 
 `Agent != Sandbox`.
 
-Docker, LXC, VM, Kubernetes, remote machines, and future runtimes sit behind a common sandbox contract.
+MVP1 uses local Incus behind a common sandbox contract. Docker, other VM managers,
+Kubernetes, remote machines, and future runtimes are demand-driven implementations of
+that replaceable boundary rather than baseline commitments.
 
 ### P3. Model agnostic
 
@@ -357,7 +359,7 @@ Human or policy gate for sensitive transitions such as commit, publish, PR, secr
 3. Issue is imported or selected.
 4. User or workflow assigns issue to an agent/group.
 5. Control plane creates branch + worktree + workspace.
-6. Sandbox provider provisions Docker/LXC/VM and attaches the workspace.
+6. Sandbox provider provisions a local Incus instance in MVP1 and attaches the workspace; later providers remain behind the same product boundary.
 7. Repository intelligence retrieves likely relevant code, tests, specs, and history.
 8. Context engine produces a role-specific context pack.
 9. Runtime adapter starts or resumes Hermes/Claude Code/Codex/OMP.
@@ -560,7 +562,7 @@ The product is differentiated from generic agent frameworks by the combination o
 
 1. **Harness independence** — Hermes, Claude Code, Codex, OMP under one agent model.
 2. **Git-native local-first workspaces** — source changes are first-class and reviewable before remote publication.
-3. **Sandbox-provider abstraction** — Docker/LXC/VM selected by policy.
+3. **Sandbox-provider abstraction** — local Incus first, with additional providers added by demonstrated demand rather than baked into product identity.
 4. **Dual multi-agent semantics** — deliberation and workflow are distinct first-class modes.
 5. **Artifact-driven coordination** — structured handoffs instead of transcript dependence.
 6. **Repository intelligence** — graph + lexical + semantic + Git-aware retrieval.
@@ -707,7 +709,7 @@ Users must be able to inspect what changed without trusting an agent summary. Th
 7. How should local repository mirrors be shared safely across users/projects?
 8. How should token efficiency be benchmarked against engineering quality to prevent misleading optimization?
 9. How much model-specific prompt logic belongs in the platform versus runtime adapters?
-10. What is the minimum portable sandbox contract that works across Docker, LXC, and VM without hiding critical capability differences?
+10. What demonstrated demand and portability evidence should trigger an additional local or remote sandbox-provider implementation?
 
 ---
 

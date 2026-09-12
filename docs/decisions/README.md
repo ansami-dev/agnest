@@ -46,3 +46,4 @@ question is on the record, and that the ADR cannot arrive without one.
 | ID | Title | Status | Decides for |
 |---|---|---|---|
 | [ADR-0003](ADR-0003-mvp1-component-authority-boundaries.md) | Enforce three authority boundaries around the MVP1 modular control plane | Accepted | MVP1 |
+| [ADR-0011](ADR-0011-local-incus-provider-for-mvp1.md) | Use local Incus as the sole MVP1 sandbox provider | Accepted | MVP1 |
