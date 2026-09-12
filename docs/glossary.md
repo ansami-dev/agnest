@@ -162,6 +162,11 @@ replace reading the canonical source.
 | **Execution Gateway** | MVP1 | The control-plane component that validates and audits bounded execution requests and dispatches them to an existing Sandbox generation (`ARC-M1-006`). |
 | **Recovery Reconciler** | MVP1 | The control-plane component that compares durable intent with attributed provider/filesystem observations and recovers through normal policy-enforcing ports (`ARC-M1-007`). |
 | **Task Sandbox** | MVP1 | The untrusted execution boundary for one assigned Workspace projection; it has no access to shared Git administration, broker IPC, provider authority, or control-plane credentials (`ARC-M1-008`). |
+| **Canonical Origin** | MVP1 | The exact normalized `(scheme, host, effective port)` to which a repository credential is bound. A redirect or request to another origin requires separate registration and authority. |
+| **Origin Role** | MVP1 | The fixed purpose of a registered repository origin and credential binding: `API` for provider metadata calls or `GIT` for Git transport. Credential selection is keyed by integration and role even when both roles use the same host. |
+| **Integration Contract** | MVP1 | A versioned provider-neutral boundary defining authentication, operations, normalized failures, deadlines, health, compatibility, and conformance expectations for an adapter. |
+| **Capability Snapshot** | MVP1 | An immutable, expiring, per-instance-kind observation of capabilities evidenced by local Incus at a daemon, adapter, and host-capability version. A Sandbox binding pins the snapshot used for eligibility; evidence is never inherited across kinds. |
+| **Conformance Case** | MVP1 | A provider-neutral, machine-readable assertion that each applicable adapter must bind to an isolated fixture and pass before claiming contract compatibility. |
 
 ## 4. Orchestration
 
