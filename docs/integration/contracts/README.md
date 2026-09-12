@@ -92,7 +92,7 @@ repository content. `provider_code` is allowlisted metadata, not a raw error str
 | `UNSUPPORTED_CAPABILITY` | compatibility | Select another profile/provider or change intent. |
 | `AUTHENTICATION_FAILED` | auth | Repair peer or integration identity; never blind retry. |
 | `AUTHORIZATION_DENIED` | auth | Change policy/authority; never blind retry. |
-| `ORIGIN_MISMATCH` | policy | Correct registered remote; never follow or retry redirected origin. |
+| `ORIGIN_MISMATCH` | policy | Correct the origin registered for the operation's origin role; never follow or retry a mismatched redirect. |
 | `STALE_GENERATION` | conflict | Refresh state; never retarget automatically. |
 | `CONFLICT` | conflict | Re-observe canonical state before a new attempt. |
 | `NOT_FOUND` | state | Valid only after the named authority was positively observable. |
@@ -115,8 +115,9 @@ normalized response never uses string matching to determine category or retry po
 
 - A client sets a finite deadline for every external I/O operation.
 - The server refuses work whose deadline has already elapsed.
-- Cancellation has an identity and an acknowledgement; losing the cancellation response
-  yields an ambiguous outcome, not proof that the effect stopped.
+- Cancellation is its own persisted external-effect intent with its own `operation_id`,
+  committed before dispatch and linked to the target operation. Losing the cancellation
+  response yields an ambiguous cancellation outcome, not proof that the effect stopped.
 - Transport retry is not operation retry. A retry that can cause an effect reuses the
   persisted `operation_id` and follows that contract's observe-before-act rule.
 - Exponential backoff is bounded by the persisted deadline and includes jitter.

@@ -211,8 +211,34 @@
       "id": "CONF-M1-032",
       "contract": "INT-M1-004",
       "providers": ["incus"],
-      "instanceKinds": ["SYSTEM_CONTAINER"],
       "assertion": "Only the provider-broker OS identity can access the local Incus socket/API; control-plane, fetch-broker, and task-sandbox identities are denied."
+    },
+    {
+      "id": "CONF-M1-033",
+      "contract": "INT-M1-001,INT-M1-002",
+      "providers": ["github", "forgejo", "git"],
+      "assertion": "API and Git origins are validated by role and credential selection is keyed by integration_id plus origin_role; an API credential is never presented to Git transport and a Git credential is never presented to an API endpoint."
+    },
+    {
+      "id": "CONF-M1-034",
+      "contract": "INT-M1-005",
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
+      "assertion": "A standard-input blob outside the request Workspace or its authenticated caller-upload namespace fails with AUTHORIZATION_DENIED before provider dispatch, and the broker receives only an authorized bounded byte stream rather than a blob reference."
+    },
+    {
+      "id": "CONF-M1-035",
+      "contract": "INT-M1-005",
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
+      "assertion": "One run_id maps one-to-one to one execution operation_id; executing again after operator acceptance of UNKNOWN_OUTCOME allocates both IDs anew, links supersedes_run_id, and preserves the earlier ambiguous run."
+    },
+    {
+      "id": "CONF-M1-036",
+      "contract": "INT-M1-005",
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
+      "assertion": "Cancellation has its own operation_id linked to the target run and execution operation; its intent is durably committed before dispatch and every acknowledgement transition is durably recorded."
     }
   ]
 }

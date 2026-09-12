@@ -24,11 +24,15 @@ without credential selection.
 |---|---|
 | `integration_id` | Opaque reference to platform-controlled integration configuration. |
 | `remote_url` | HTTPS URL by default; SSH is allowed only as an explicitly configured scheme. User information is forbidden. |
-| `expected_origin` | Canonical `(scheme, lowercase host, effective port)` selected at registration. |
+| `origins[]` | Non-empty set of role-bound origins. Each entry contains `origin_role: API | GIT` and one canonical `(scheme, lowercase host, effective port)`. Each role appears exactly once. |
 | `repository_locator` | Provider-native owner/path or namespace/path, retained as metadata rather than authority. |
 
 Canonicalization removes a default port but does not rewrite scheme, host aliases, path,
-or repository identity. A redirect to another origin fails with `ORIGIN_MISMATCH`.
+or repository identity. GitHub.com normally registers `API = https://api.github.com` and
+`GIT = https://github.com`; a self-hosted provider may use the same canonical origin for
+both roles, but the roles and their credential bindings remain distinct. A redirect or
+outbound request that does not match the origin registered for that operation's role
+fails with `ORIGIN_MISMATCH`.
 
 ## Operations
 
@@ -52,6 +56,12 @@ workflow, organization, and repository-deletion authority are not part of this c
 The caller is authenticated as described in the shared contract conventions; request
 fields cannot select a different principal.
 
+Credential selection is keyed by `(integration_id, origin_role)`. Repository API calls
+use only the `API` binding. A Git transport operation such as authenticated `ls-remote`
+is delegated through `INT-M1-002` and uses only the `GIT` binding. A credential obtained
+for either role is never presented to the other role, even when both roles have the same
+canonical origin.
+
 ## Provider mapping
 
 | Normalized fact | GitHub | Forgejo |
@@ -69,6 +79,8 @@ authenticated principal may distinguish absence.
 
 ## Health and compatibility
 
-Health performs an authenticated, read-only repository metadata request with a finite
-deadline. A general provider status page is diagnostic only. The adapter records the
-provider API version when exposed and must tolerate additive response fields.
+Health performs finite, authenticated, read-only probes for every configured origin role:
+repository metadata for `API`, and a non-mutating remote reference observation for `GIT`.
+Failure is reported per role. A general provider status page is diagnostic only. The
+adapter records the provider API version when exposed and must tolerate additive response
+fields.

@@ -20,6 +20,7 @@ Transport authentication, result envelopes, and deadline ceilings are inherited 
 FetchRequest {
   common_context,
   integration_id,
+  origin_role: GIT,
   canonical_origin,
   remote_name,
   mirror_id,
@@ -35,7 +36,8 @@ that configuration, not an instruction to write elsewhere.
 ## Preconditions
 
 - The authenticated peer is the configured Repository service identity.
-- The URL has no user information and exactly matches the integration's canonical origin.
+- The URL has no user information and exactly matches the integration's origin registered
+  for the `GIT` role.
 - The resolved mirror path is beneath the broker's configured mirror root after real-path
   resolution.
 - The target is a bare mirror owned by the requested `repository_id`.
@@ -46,12 +48,14 @@ that configuration, not an instruction to write elsewhere.
 The broker invokes Git without a shell, from fixed argv, with a minimal environment.
 System/global/repository credential helpers and hooks are disabled; `protocol.ext` and
 unapproved transports are denied; submodules are not recursively fetched. A credential is
-selected by canonical origin, injected through a broker-private mechanism, and erased
-after the operation. It is never written into the remote URL, mirror config, response, or
-logs.
+selected by `(integration_id, GIT)`, verified against the registered `GIT` origin, injected
+through a broker-private mechanism, and erased after the operation. An `API`-role
+credential is never eligible for Git transport, even when its canonical origin happens to
+match. Credential material is never written into the remote URL, mirror config, response,
+or logs.
 
-Cross-origin redirects are rejected. A new origin requires a separately registered
-remote and integration policy.
+Cross-origin redirects are rejected with `ORIGIN_MISMATCH` against the `GIT` role. A new
+origin requires a separately registered remote and integration policy.
 
 ## Result and recovery
 
@@ -66,6 +70,7 @@ the same fetch again. A missing or unavailable mirror root is `UNOBSERVABLE`, no
 
 ## Health
 
-Broker health verifies peer-authenticated IPC, credential-store reachability without
-reading a secret value into the response, mirror-root accessibility, Git executable
-version, and a read-only authenticated remote probe. It does not fetch.
+Broker health verifies peer-authenticated IPC, reachability of the `(integration_id, GIT)`
+credential binding without reading a secret value into the response, mirror-root
+accessibility, Git executable version, and a read-only authenticated remote probe against
+the registered `GIT` origin. It does not fetch.

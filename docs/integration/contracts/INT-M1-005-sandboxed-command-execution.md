@@ -26,10 +26,9 @@ ExecuteRequest {
   argv[],
   working_directory,
   environment_names[],
-  standard_input: NONE | bounded_blob_reference,
+  standard_input: NONE | bounded_input_stream,
   timeout_ms,
-  output_limit_bytes,
-  cancellation_id
+  output_limit_bytes
 }
 ```
 
@@ -37,6 +36,14 @@ ExecuteRequest {
 shell executable in `argv`. Environment values are resolved by the Execution Gateway
 from an allowlist and transmitted over authenticated IPC; the request cannot inherit the
 control-plane or broker environment. Remote Git write credentials are excluded.
+
+The public Control API may accept an immutable blob reference as an input source, but
+the Execution Gateway resolves and authorizes it before this broker call. The reference
+must belong to the request's Workspace or to a dedicated, expiring caller-upload
+namespace already bound to that Workspace and authenticated principal. Any mismatch is
+`AUTHORIZATION_DENIED` before provider dispatch. The gateway then supplies a bounded byte
+stream over authenticated IPC; the broker never receives a blob reference and has no
+authority to dereference the blob store.
 
 The broker verifies the current lease and exact generation, then resolves and revalidates
 the working directory beneath the assigned Workspace projection at execution time. A
@@ -68,12 +75,33 @@ provider. Without this capability, explicit operator resolution is the only reco
 path. Operator resolution creates a new intent and records acceptance of possible prior
 effects.
 
+One `run_id` maps one-to-one to one persisted execution intent and its `operation_id`.
+Neither identifier is reused for a new execution. After an operator accepts an ambiguous
+prior effect and elects to execute again, the gateway creates both a new `run_id` and a
+new execution `operation_id`, and records `supersedes_run_id` pointing to the preserved
+ambiguous run. The earlier run remains `UNKNOWN_OUTCOME`; supersession does not rewrite
+history or claim that its process stopped.
+
 ## Cancellation
 
-Cancellation targets both `cancellation_id` and the original `operation_id`. An
-acknowledgement distinguishes `REQUESTED`, `DELIVERED`, and `PROCESS_EXIT_CONFIRMED`.
-Only the last proves the process ended. Timeout uses the same cancellation path and does
-not imply successful termination.
+Cancellation is a separate external effect and therefore a separate persisted intent:
+
+```text
+CancelExecutionRequest {
+  common_context,
+  target_run_id,
+  target_execution_operation_id
+}
+```
+
+The `operation_id` in this request identifies the cancellation intent, not the execution
+intent. The gateway commits that intent before dispatching cancellation and links it to
+the target run and execution operation. Retrying the same cancellation intent reuses its
+operation ID; a separately requested later cancellation creates a new cancellation
+intent, so one run may have many cancellation intents. An acknowledgement distinguishes
+`REQUESTED`, `DELIVERED`, and `PROCESS_EXIT_CONFIRMED`, and each transition is durably
+recorded. Only the last proves the process ended. Timeout uses the same intent-before-
+effect path and does not imply successful termination.
 
 ## Health
 
