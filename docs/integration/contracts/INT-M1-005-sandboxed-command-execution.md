@@ -3,7 +3,7 @@
 **Status:** Proposed
 **Owner:** Integration (Codex)
 **Issue:** #9
-**Providers:** Docker, Incus/LXC, future VM providers
+**Provider:** Local Incus
 **Requirements:** `FR-M1-006`, `FR-M1-011`, `FR-M1-012`, `FR-M1-017`
 
 ## Purpose
@@ -13,6 +13,8 @@ caller to redefine that confinement. Commands and tests share this contract; pro
 metadata distinguishes their run type.
 It runs over the authenticated sandbox-provider broker channel defined by
 [`README.md`](README.md); a sandbox cannot reach that channel.
+Each enabled Incus instance kind must pass this contract independently; one kind's result
+is not evidence for another.
 
 ## Request
 
@@ -75,6 +77,8 @@ not imply successful termination.
 
 ## Health
 
-Health verifies the provider's guest-exec mechanism, bounded output transport,
-cancellation path, and observation retention when advertised, using a broker-owned
-fixture. It never executes repository content.
+Health verifies Incus guest execution, bounded output transport, cancellation, and
+observation retention when advertised, using a broker-owned fixture. The system-container
+probe is mandatory; optional OCI/VM probe status is reported per kind and cannot be reused
+or degrade overall provider health merely because the kind is unsupported. Health never
+executes repository content.

@@ -3,7 +3,7 @@
 **Status:** Proposed
 **Owner:** Integration (Codex)
 **Issue:** #9
-**Decision:** `ADR-0003`
+**Decisions:** `ADR-0003`, `ADR-0011`
 
 These conventions apply to `INT-M1-001` through `INT-M1-006`. They define the stable
 product-facing contract. Provider SDK types, CLI output, HTTP payloads, and daemon errors
@@ -39,9 +39,8 @@ policy and provider observation.
 ## Broker transport and authentication
 
 The credentialed-fetch and sandbox-provider contracts use peer-authenticated local IPC.
-The Linux baseline is a Unix-domain socket protected by filesystem permissions and peer
-credentials. Another operating system may use a different local transport only when it
-provides equivalent peer identity, endpoint ACLs, and sandbox exclusion.
+MVP1 runs inside the Linux Agnest appliance VM and uses Unix-domain sockets protected by
+filesystem permissions and peer credentials.
 
 - The caller identity is bound by transport configuration, never by a request header.
 - Broker endpoints are outside sandbox-visible mounts and denied by sandbox networking.
@@ -50,8 +49,8 @@ provides equivalent peer identity, endpoint ACLs, and sandbox exclusion.
 - Request and response logs redact remote URLs containing user information, environment
   values, credential-store diagnostics, and raw command output.
 
-Remote broker placement and network bearer authentication are outside MVP1 and require a
-new decision.
+Remote broker placement, network bearer authentication, remote workers, and Workspace
+replication are outside MVP1 under `ADR-0011` and require a new demand-driven decision.
 
 ## Result envelope
 

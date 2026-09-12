@@ -9,7 +9,7 @@ Current MVP1 package (Issue #9):
 - `contracts/INT-M1-*.md` — six provider-neutral contracts with explicit provider
   mappings
 - [`capability-matrix-M1.md`](capability-matrix-M1.md) — required and optional
-  capabilities across Docker, Incus/LXC, and a future VM adapter
+  capabilities for local Incus system-container, OCI, and VM instance kinds
 - [`conformance/cases-M1.json`](conformance/cases-M1.json) — machine-readable contract
   cases; implementations bind these assertions to provider fixtures
 

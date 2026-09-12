@@ -3,15 +3,15 @@
 **Status:** Proposed
 **Owner:** Integration (Codex)
 **Issue:** #9
-**Providers:** Docker, Incus/LXC, future VM providers
+**Provider:** Local Incus
 **Requirements:** `FR-M1-005`–`FR-M1-010`, `FR-M1-016`, `FR-M1-019`
 
 ## Purpose and authority
 
-The sandbox-provider broker turns a trusted profile name into a confined provider
-resource. It owns daemon credentials and provider-native configuration. The caller cannot
-supply an image, mount, device, privilege, network, runtime user, provider name, or raw
-container/VM specification.
+The sandbox-provider broker turns a trusted profile name into a confined local Incus
+instance. It alone holds `incus-admin` or equivalent daemon authority and owns
+provider-native configuration. The caller cannot supply an image, mount, device,
+privilege, network, runtime user, endpoint, instance name, or raw Incus specification.
 It inherits peer authentication, version negotiation, result envelopes, deadlines, and
 error normalization from [`README.md`](README.md).
 
@@ -27,19 +27,19 @@ destroy(context, destruction_evidence)
 
 All operations target `(deployment_id, workspace_id, sandbox_uuid, generation)`. Create
 also carries `operation_id`; ownership and operation identity are materialized atomically
-in the provider create call through labels or a deterministic provider name.
+in the Incus create call through config keys or a deterministic instance name.
 
 ### Create
 
-The broker resolves a versioned profile and capability snapshot. It validates that the
-provider proves every required capability, broker endpoints are excluded from mounts and
-network routes, the Workspace projection belongs to the request, and no non-terminal
-resource with conflicting identity exists. A retry observes by full identity before
-creating.
+The broker resolves a versioned profile to one Incus instance kind and requires a current
+capability snapshot for that exact kind. It validates that the snapshot proves every
+required capability, broker endpoints are excluded from mounts and network routes, the
+Workspace projection belongs to the request, and no non-terminal resource with
+conflicting identity exists. A retry observes by full identity before creating.
 
-Success returns provider kind, opaque provider resource reference, profile version,
-capability snapshot ID, observed state, and ownership evidence. The provider reference is
-a locator, never product identity.
+Success returns provider kind `INCUS`, Incus instance kind, opaque resource reference,
+profile version, pinned per-kind capability snapshot ID, observed state, and ownership
+evidence. The provider reference is a locator, never product identity.
 
 ### Start and stop
 
@@ -50,7 +50,8 @@ observe before retrying.
 ### Observe
 
 Observation is side-effect free and returns `OBSERVED_PRESENT`, `OBSERVED_ABSENT`, or
-`UNOBSERVABLE`, plus authority, time, provider reference, ownership labels, generation,
+`UNOBSERVABLE`, plus authority, time, provider reference, ownership config keys,
+generation,
 runtime state, and health evidence. Absence is valid only when the provider authority was
 positively reachable.
 
@@ -60,7 +61,7 @@ Destroy requires a typed evidence bundle proving current ownership, matching gen
 positive provider availability, stopped/quarantined state, minimum age, and the configured
 durable count of distinct observations. The broker re-observes immediately before the
 effect. Missing/foreign ownership, stale evidence, or an unavailable provider fails
-closed. The request cannot ask the broker to relabel or adopt a resource.
+closed. The request cannot ask the broker to rewrite ownership keys or adopt a resource.
 
 ## Workspace projection
 
@@ -69,18 +70,22 @@ worktree `.git` administration, the bare mirror, sibling workspaces, control-pla
 blob roots, broker IPC, and daemon endpoints. The broker returns whether Git metadata is
 available inside the sandbox; it does not fabricate it.
 
-## Provider mappings
+## Incus instance-kind mapping
 
-- **Docker:** create-time labels and server-resolved container configuration; daemon/API
-  access remains broker-only.
-- **Incus/LXC:** create-time config keys or deterministic name and server-resolved
-  instance profile; Incus socket remains broker-only.
-- **Future VM:** must provide equivalent atomic ownership, peer-authenticated management,
-  workspace containment, ownership observation, and stale-generation behavior. A VM
-  adapter is not eligible by resemblance alone.
+- **System container:** required MVP1 baseline and mandatory conformance target.
+- **OCI application container:** optional; eligible only from its own current capability
+  snapshot and conformance result.
+- **Virtual machine:** optional; eligible only from its own current capability snapshot,
+  including nested-virtualization evidence, and conformance result.
+
+Evidence never transfers between kinds. All kinds use create-time Incus config keys or a
+deterministic instance name for atomic ownership identity. The Incus socket remains
+broker-only and the endpoint is fixed by deployment, not caller input.
 
 ## Health
 
-Health checks authenticated IPC, provider daemon reachability/version, profile catalogue
-integrity, ownership-label round-trip support, and the ability to evidence every declared
-security capability using non-production fixtures. It never creates a user Workspace.
+Health checks authenticated IPC, local Incus reachability/version, profile catalogue
+integrity, ownership-key round-trip support, and every capability required by the
+system-container baseline using non-production fixtures. Missing optional OCI/VM support
+is reported per kind without degrading overall provider health. Health never
+creates a user Workspace.

@@ -78,110 +78,141 @@
     {
       "id": "CONF-M1-013",
       "contract": "INT-M1-004",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "Create accepts only product identities, generation, operation_id, profile name, and Workspace projection handle; raw provider specifications are rejected."
     },
     {
       "id": "CONF-M1-014",
       "contract": "INT-M1-004",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "Ownership and operation identity are established atomically in the provider create call."
     },
     {
       "id": "CONF-M1-015",
       "contract": "INT-M1-004",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "Retry with the same operation_id observes the existing owned resource before create and does not create a duplicate."
     },
     {
       "id": "CONF-M1-016",
       "contract": "INT-M1-004",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "A stale generation fails with STALE_GENERATION and is never redirected to the current generation."
     },
     {
       "id": "CONF-M1-017",
       "contract": "INT-M1-004",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "The sandbox cannot access the bare mirror, Git administration, sibling Workspaces, control-plane or blob roots, broker endpoints, daemon endpoints, or Git credentials."
     },
     {
       "id": "CONF-M1-018",
       "contract": "INT-M1-004",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "Destroy rejects foreign or missing ownership, stale generation, unavailable authority, and insufficient durable observation evidence."
     },
     {
       "id": "CONF-M1-019",
       "contract": "INT-M1-005",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "Execution uses argv without implicit shell interpolation and rejects an environment name outside the allowlist."
     },
     {
       "id": "CONF-M1-020",
       "contract": "INT-M1-005",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "The working directory is revalidated inside the assigned Workspace projection immediately before execution."
     },
     {
       "id": "CONF-M1-021",
       "contract": "INT-M1-005",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "Output beyond the configured bound is explicitly marked truncated and raw output never appears in the normalized error envelope."
     },
     {
       "id": "CONF-M1-022",
       "contract": "INT-M1-005",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "A deadline or lost response after dispatch becomes UNKNOWN_OUTCOME and blocks further execution on that generation."
     },
     {
       "id": "CONF-M1-023",
       "contract": "INT-M1-005",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "A provider without execution-observation-by-operation-id requires explicit operator resolution and never automatically redispatches."
     },
     {
       "id": "CONF-M1-024",
       "contract": "INT-M1-005",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "Cancellation distinguishes requested, delivered, and process-exit-confirmed; only the final state proves termination."
     },
     {
       "id": "CONF-M1-025",
       "contract": "INT-M1-005",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "When Git metadata is hidden, every Command Run and Test Run reports GitMetadataUnavailable even if exit code is zero."
     },
     {
       "id": "CONF-M1-026",
       "contract": "INT-M1-006",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "Unknown or unevidenced capabilities remain UNKNOWN or UNSUPPORTED and cannot satisfy a required profile capability."
     },
     {
       "id": "CONF-M1-027",
       "contract": "INT-M1-006",
-      "providers": ["docker", "incus", "vm"],
-      "assertion": "A provider, host, or adapter version change invalidates the prior immutable capability snapshot."
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
+      "assertion": "A daemon identity/version, adapter version, host-capability fingerprint change, or snapshot expiry invalidates the prior immutable per-kind capability snapshot."
     },
     {
       "id": "CONF-M1-028",
       "contract": "INT-M1-006",
-      "providers": ["docker", "incus", "vm"],
-      "assertion": "Profile evaluation reports every required, missing, degraded, and satisfied capability without creating a resource."
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
+      "assertion": "Profile evaluation rejects a snapshot from another instance kind and reports every required, missing, degraded, and satisfied capability without creating a resource."
     },
     {
       "id": "CONF-M1-029",
       "contract": "INT-M1-006",
-      "providers": ["docker", "incus", "vm"],
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
       "assertion": "Provider unavailability yields UNAVAILABLE and cannot be interpreted as resource absence."
     },
     {
       "id": "CONF-M1-030",
       "contract": "INT-M1-001,INT-M1-002,INT-M1-004,INT-M1-005,INT-M1-006",
-      "providers": ["github", "forgejo", "git", "docker", "incus", "vm"],
+      "providers": ["github", "forgejo", "git", "incus"],
       "assertion": "Logs and safe diagnostics contain no credential, authenticated URL, uncontrolled provider error body, environment value, or raw command output."
+    },
+    {
+      "id": "CONF-M1-031",
+      "contract": "INT-M1-006",
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER", "OCI_APPLICATION_CONTAINER", "VM"],
+      "assertion": "Provider health is HEALTHY when the system-container baseline passes even if optional OCI or VM kinds are unsupported; optional-kind status remains separately observable."
+    },
+    {
+      "id": "CONF-M1-032",
+      "contract": "INT-M1-004",
+      "providers": ["incus"],
+      "instanceKinds": ["SYSTEM_CONTAINER"],
+      "assertion": "Only the provider-broker OS identity can access the local Incus socket/API; control-plane, fetch-broker, and task-sandbox identities are denied."
     }
   ]
 }
