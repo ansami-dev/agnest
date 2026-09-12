@@ -100,7 +100,7 @@ names it.
 | Domain entity | `ENT-<PascalName>` | Data Design | `ENT-Workspace` |
 | Event type | `EVT-<PascalName>` | Data Design | `EVT-WorkspaceDiscarded` |
 | Architecture component | `ARC-M<n>-<nnn>` | Architecture | `ARC-M1-002` |
-| Integration contract | `INT-<Provider>-<nnn>` | Integration | `INT-Forgejo-003` |
+| Integration contract | `INT-M<n>-<nnn>` | Integration | `INT-M1-003` |
 | Decision record | `ADR-<nnnn>` | any role, sequential | `ADR-0007` |
 
 Rules:
@@ -120,13 +120,26 @@ needs a running service:
 
 **Name-derived IDs — `ENT-`, `EVT-`.** Derived from the entity or event name, not from a
 counter. Two roles cannot collide: if they pick the same name they mean the same thing,
-and if they pick different names they get different IDs. Allocated in
-`docs/data/entity-register.md`, which is the only place `ENT-` IDs come from.
+and if they pick different names they get different IDs.
+
+They have separate registers, because an entity is a thing that exists and an event is a
+thing that happened. Those differ in identity, retention, and versioning: an event payload
+is versioned and its records are immutable, while an entity is migrated and its rows are
+updated. Mixing them in one catalogue would blur exactly the distinction MVP3 depends on.
+
+- `ENT-` is allocated in `docs/data/entity-register.md`, and nowhere else.
+- `EVT-` is allocated in `docs/data/event-register.md`, and nowhere else.
 
 **`ADR-` — allocated by GitHub, not by us.** An ADR takes the number of the GitHub issue
-that produced it, or, where there is no issue, the number of its own PR. Issues and pull
-requests share one counter per repository, so the number is unique by construction, needs
-no reservation, and cannot race. Deliberation issue #12 produces `ADR-0012`.
+that produced it. Issue numbers are unique per repository, so the number needs no
+reservation and cannot race. Deliberation issue #12 produces `ADR-0012`.
+
+**Every ADR has an originating issue — there is no fallback.** A decision made wholly
+inside one role's scope still opens an issue first, even when no deliberation follows.
+The cost is one extra issue; the thing it buys is that no decision can arrive without a
+record of what prompted it. An ADR numbered from anything but an issue would be an ADR
+with no question behind it, and "it was obvious to me at the time" is precisely the
+reasoning a decision record exists to prevent.
 
 This gives up contiguity — ADR numbers will have gaps and will not be dense. That is the
 right trade: ADRs are cited by ID, not read in sequence, and a gap costs nothing while a
@@ -303,9 +316,22 @@ Automated `@claude` invocation from issue and PR comments is **not enabled** and
 not be enabled until all of the following are in place. A comment trigger means
 untrusted input starting a job that holds repository secrets.
 
-1. **No `pull_request_target`.** Workflows use `pull_request`. `pull_request_target`
-   runs with a write-capable token in the context of the base repository while checking
-   out attacker-controlled code from a fork.
+1. **No `pull_request_target`.** Workflows use `pull_request`.
+
+   Stated precisely, because the imprecise version invites someone to test whether it
+   really applies here. `pull_request_target` runs in **privileged base-repository
+   context**: it sees repository secrets and a write-capable `GITHUB_TOKEN`, and it runs
+   the workflow definition from the base branch rather than from the pull request. That
+   much is by design and is not itself the vulnerability.
+
+   The vulnerability appears when a workflow running in that privileged context then
+   **checks out or executes untrusted head code** — the fork's branch, its build scripts,
+   its dependencies, its tooling config. At that moment attacker-controlled code is
+   executing with the base repository's secrets in reach.
+
+   The prohibition holds for Agnest agent workflows regardless of how carefully a given
+   workflow is written, because an agent workflow reads and acts on the contents of the
+   pull request by construction. Untrusted head content is its input, not an accident.
 2. **Actor gating.** Only `author_association` of `OWNER`, `MEMBER`, or `COLLABORATOR`
    may trigger an agent run. Without this, anyone able to comment can execute a
    secret-bearing job — prompt injection and cost-denial-of-service in one step.

@@ -52,9 +52,13 @@ body:
     id: ids
     attributes:
       label: New IDs this work will allocate
-      description: Threats, controls, entities, events, components, contracts. Allocate once; never reuse.
+      description: >-
+        Threats, controls, entities, events, components, contracts. Allocate once; never
+        reuse. Sequential families (THR/SEC/ARC/INT/NFR) are reserved in
+        docs/agents/id-registry.md as the first commit on the branch; ENT- comes from
+        docs/data/entity-register.md and EVT- from docs/data/event-register.md.
       placeholder: |
-        THR-M1-002, SEC-M1-004, ENT-Workspace
+        THR-M1-002, SEC-M1-004, ENT-Workspace, EVT-WorkspaceDiscarded, INT-M1-003
 
   - type: textarea
     id: dod

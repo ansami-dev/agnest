@@ -6,8 +6,9 @@ product itself keeps engineering state in artifacts rather than transcripts.
 
 ## Rules
 
-1. **Numbering.** `ADR-<nnnn>`, sequential, allocated once and never reused. A withdrawn
-   number stays withdrawn.
+1. **Numbering.** `ADR-<nnnn>` is the number of the GitHub issue that produced the ADR.
+   Allocated once and never reused; a withdrawn number stays withdrawn. Numbers will have
+   gaps, which is fine — ADRs are cited by ID, not read in sequence.
 2. **Filename.** `ADR-<nnnn>-<kebab-slug>.md`.
 3. **Proposed ADRs are editable.** While the PR is open, change anything.
 4. **Accepted ADRs are immutable.** Do not edit an accepted ADR to correct, extend, or
@@ -23,8 +24,11 @@ product itself keeps engineering state in artifacts rather than transcripts.
 Most ADRs are the output of a Deliberation issue (`docs/agents/roles.md` §3.1). The
 coordinator named in that issue opens one ADR PR after the deliberation terminates.
 
-An ADR may also be written directly when a single role makes a decision wholly inside
-its own scope that other roles will nonetheless have to live with.
+A single role may also decide something wholly inside its own scope that the other roles
+will nonetheless have to live with. That still opens an issue first — **every ADR has an
+originating issue, with no exception and no PR-number fallback.** The issue may be
+answered in one comment by one role; what matters is that the number exists, that the
+question is on the record, and that the ADR cannot arrive without one.
 
 ## Status values
 
