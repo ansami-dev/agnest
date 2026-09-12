@@ -114,13 +114,17 @@ policy checks, concurrency controls, and audit path.
 | Control plane | Application database, workspace root through `GitWorkspaceService`, typed broker clients | Git credentials, provider daemon socket or credentials, arbitrary sandbox host paths |
 | Credentialed-fetch broker | Fetch-only credential, configured mirror root, explicit remote URL | Workspace roots, application database, sandbox daemon, reusable credential export |
 | Sandbox-provider broker | Provider daemon authority, trusted profile catalogue, broker-owned resource mapping | Repository credentials, application database, caller-supplied container specifications |
-| Task sandbox | Assigned workspace projection, declared ephemeral paths, profile-approved network destinations | Bare mirror, linked-worktree Git administration, sibling workspaces, control-plane API/database, provider daemon, control-plane secrets, remote-write Git credentials |
+| Task sandbox | Assigned workspace projection, declared ephemeral paths, profile-approved network destinations | Bare mirror, linked-worktree Git administration, sibling workspaces, control-plane API/database, control-plane-to-broker IPC endpoints, provider daemon, control-plane secrets, remote-write Git credentials |
 
 The two brokers communicate with the control plane over authenticated local IPC on the
 sandbox host. Unix-domain sockets with peer and filesystem permissions are the Linux
 baseline; another host OS must provide an equivalent peer-authenticated local transport.
 The control-plane identity is not a member of the Docker group and receives no provider
 daemon credential.
+
+Broker socket paths are outside every sandbox-visible mount root. If a broker uses a
+local network endpoint rather than a filesystem socket, sandbox network policy denies
+that endpoint. A profile cannot override either exclusion.
 
 ### 3. Make bare mirror plus isolated worktrees an invariant
 
@@ -150,6 +154,14 @@ than silently presenting an incorrect build as fully representative. Providing a
 read-only workspace-scoped Git view is deferred to the runtime-boundary decision before
 MVP2; exposing the mirror is not an acceptable workaround.
 
+The projection mechanism alone is not the diagnostic mechanism: an absent and a masked
+or invalid `.git` entry can produce different tool behavior. At sandbox start, the
+Execution Gateway probes whether workspace Git metadata is available and records the
+result. Every command and test result from the MVP1 projection carries an explicit
+`GitMetadataUnavailable` environment condition when it is not. A zero-exit build may
+still succeed, but Agnest does not present it as fully representative without that
+warning.
+
 ### 4. Keep provider confinement server-owned
 
 The sandbox-provider broker owns a versioned profile catalogue. A create request carries
@@ -157,6 +169,11 @@ only trusted product identities, `generation`, `deployment_id`, and a profile na
 broker resolves the image, runtime user, workspace mapping, mounts, devices, privileges,
 network policy, resource limits, and provider-specific configuration. It never accepts a
 raw Docker, Incus, or VM specification from the caller.
+
+The profile catalogue treats the control-plane-to-broker IPC paths as reserved host
+paths that cannot be mounted or exposed to a task sandbox. For network IPC, the profile
+must also exclude the endpoint from allowed routes. Profile validation fails closed when
+either exclusion cannot be evidenced by the provider.
 
 Provider capabilities include security properties as well as lifecycle operations:
 rootless or user-namespace support, read-only and masked mounts, network isolation,
@@ -182,8 +199,15 @@ executor so the daemon-authority process leaves the command hot path.
 
 The control plane requests an authenticated fetch operation; it does not request a
 credential value or credential handle usable elsewhere. The credentialed-fetch broker
-uses a short-lived, operation-scoped credential against an explicit remote URL and writes
-only to the configured mirror root.
+uses a short-lived, operation-scoped credential against an explicit registered remote URL
+and writes only to the configured mirror root.
+
+Each credential is bound to an allowed canonical origin: scheme, host, and effective
+port. The broker selects the credential from that origin rather than from caller input,
+rejects URLs containing user information or an origin mismatch, and permits only schemes
+declared by the integration. It does not follow a cross-origin redirect with or without
+the credential; a redirected origin must be registered and fetched as a separate
+operation under its own credential policy.
 
 The fetch environment uses sanitized Git configuration: hooks are disabled, dangerous
 protocols such as `protocol.ext` are denied, submodules are not recursively fetched, and
@@ -231,6 +255,21 @@ resource rather than a single workspace lifecycle state. The UI may derive a
 `RecoveryPending` or “Reconciling” condition, but that derived condition is not an
 enforcement boundary.
 
+`COMPENSATED` means a separate compensation intent reached `APPLIED`. The compensation
+has its own `operation_id`, follows the same intent-before-action sequence, and links to
+the original through `compensates_operation_id`. The original intent cannot be marked
+`COMPENSATED` merely because an application handler attempted cleanup.
+
+Resource observation uses a separate vocabulary:
+
+- `OBSERVED_PRESENT` — a positively available authority reports the resource;
+- `OBSERVED_ABSENT` — that authority is positively available and confirms absence;
+- `UNOBSERVABLE` — the authority is unavailable or the observation is inconclusive.
+
+`UNKNOWN_OUTCOME` describes an operation whose result is ambiguous; it is never reused
+as a resource-presence condition. Observations record their authority, time, resource
+identity, and generation.
+
 The current-state projection and its append-only transition row are written in one
 database transaction through one structurally enforced write path. Each transition row
 records the projection version it produced so drift can be detected. This is not a
@@ -240,6 +279,13 @@ A lifecycle transition that requires “no blocking unresolved intent” evaluat
 predicate atomically in the same transaction as its update. An application-level read
 followed by a separate write is prohibited because it introduces a time-of-check to
 time-of-use race.
+
+A workspace has at most one non-terminal sandbox binding. The next sandbox `generation`
+is allocated while holding the workspace's concurrency guard, in the same transaction
+that inserts the non-terminal binding and commits its create intent. A database
+constraint, such as a partial unique index over non-terminal bindings by `workspace_id`,
+makes a competing user or reconciler allocation fail before either can create a second
+provider resource.
 
 ### 8. Reconcile conservatively and preserve unpublished work
 
@@ -251,7 +297,7 @@ provider observations. It applies these minimum resolutions:
 | Intent exists; expected provider resource is absent | Retry by persisted intent when safe, create a new generation when replacement is required, or fail explicitly |
 | Provider resource has no intent but carries this deployment's ownership labels | Stop or quarantine first; destroy only after both a minimum grace period and a configured number of distinct successful observations |
 | Provider resource has foreign or missing ownership labels | Report; never mutate automatically |
-| Metadata references a worktree that appears absent | Use `UNKNOWN_OUTCOME` until the workspace root is positively available and absence is confirmed |
+| Metadata references a worktree that appears absent | Record `UNOBSERVABLE` until the workspace root is positively available; only then may a new observation confirm `OBSERVED_ABSENT` |
 | Worktree exists without matching metadata | Quarantine and surface for operator recovery; never delete automatically |
 | Resource identity or generation conflicts | Block mutation and require reconciliation or operator resolution |
 
@@ -352,8 +398,8 @@ the following:
 2. The two brokers run under identities distinct from the control plane and expose only
    authenticated, typed local interfaces.
 3. A task sandbox cannot read the mirror, linked-worktree Git administration, sibling
-   workspaces, the application database, control-plane secrets, or a remote-write Git
-   credential.
+   workspaces, the application database, either broker's filesystem or network IPC
+   endpoint, control-plane secrets, or a remote-write Git credential.
 4. Path-containment tests cover absolute paths, `..`, symlink swaps, and relevant
    case-folding or Unicode behavior for each supported host filesystem.
 5. A stale `(sandbox_uuid, generation)` execution request is rejected and cannot reach a
@@ -362,7 +408,8 @@ the following:
    users, and network modes, and treat unknown capabilities as unsupported.
 7. Fetch tests show the broker writes only to the configured bare mirror, uses sanitized
    Git configuration, does not recurse submodules, and does not leak credentials to a
-   child or subsequent process.
+   child, subsequent process, mismatched origin, alternate scheme, or cross-origin
+   redirect.
 8. Crash tests at every boundary between intent commit, external action, observation,
    and outcome recording converge without duplicate resources or lost intent.
 9. A stop-start-stop sequence creates three distinct intents while a retry reuses its
@@ -377,7 +424,10 @@ the following:
 13. Two workspaces from the same base commit can execute concurrently without shared
     working-tree state, and fetching the mirror does not mutate either active workspace.
 14. A build requiring `.git` metadata produces an explicit unsupported/degraded signal
+    on its command or test result—even when the tool exits zero with fallback metadata—
     rather than being reported as a fully representative successful run.
+15. Concurrent user and reconciler attempts to allocate a replacement sandbox cannot
+    commit the same generation or create two non-terminal bindings for one workspace.
 
 The ADR becomes accepted only when its PR is reviewed by a role other than the
 coordinator and merged by the Product Owner under the working agreement.
