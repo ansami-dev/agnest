@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Working agreements
+    url: https://github.com/ansami-dev/agnest/blob/main/docs/agents/roles.md
+    about: How the four roles collaborate, ID scheme, branch naming, separation of duties.
+  - name: Glossary
+    url: https://github.com/ansami-dev/agnest/blob/main/docs/glossary.md
+    about: Canonical entity names. Check here before inventing a term.

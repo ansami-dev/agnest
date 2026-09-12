@@ -1,0 +1,86 @@
+name: Deliberation
+description: A design question for the Architecture / Security / Integration / Data Design roles to decide together.
+title: "[Deliberation] "
+labels: ["deliberation", "design"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Design questions are decided in parallel, not relayed. Each role posts an
+        independent position, then responds. The coordinator publishes one ADR PR.
+        See `docs/agents/roles.md` §3.1.
+
+  - type: input
+    id: mvp
+    attributes:
+      label: MVP
+      description: Which MVP this belongs to. Use M0 for cross-cutting or project governance.
+      placeholder: M1
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Question to decide
+      description: One decision. If you find yourself writing "and", open a second issue.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Requirement IDs in scope
+      description: The FR / NFR IDs from the PRD that this decision serves.
+      placeholder: |
+        FR-M1-006, FR-M1-010, FR-M1-017
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: roles
+    attributes:
+      label: Roles required to post a position
+      options:
+        - label: Architecture (Codex)
+        - label: Integration (Codex)
+        - label: Security (Claude)
+        - label: Data Design (Claude)
+
+  - type: dropdown
+    id: coordinator
+    attributes:
+      label: Coordinator
+      description: Publishes the ADR PR. Rotates per deliberation; not a standing office.
+      options:
+        - Architecture
+        - Integration
+        - Security
+        - Data Design
+    validations:
+      required: true
+
+  - type: input
+    id: budget
+    attributes:
+      label: Termination budget
+      description: Max rounds and/or a date. Required — an unbounded deliberation is a stalled one.
+      placeholder: "2 rounds, or by 2026-09-19"
+    validations:
+      required: true
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Known constraints
+      description: Product principles, prior ADRs, or product-constitution items that bound the answer.
+      placeholder: |
+        P8 source verified — derived indexes may not be authoritative.
+        P9 local-first — sandbox holds no remote write credential.
+        ADR-0003 already fixed the mirror strategy.
+
+  - type: textarea
+    id: nondecisions
+    attributes:
+      label: Explicitly out of scope
+      description: What this deliberation will NOT settle, so nobody argues it here.
