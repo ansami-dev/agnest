@@ -109,8 +109,41 @@ Rules:
   withdrawn. A withdrawn ID stays withdrawn.
 - `<n>` in `M<n>` is the MVP the artefact was introduced in, not the MVP it currently
   affects. An MVP1 control that grows in MVP8 keeps its MVP1 ID.
-- Non-numbered PRD prose (the `§8` non-functional sections) gets an `NFR-` ID from the
-  first document that needs to cite it, recorded in that document.
+- Non-numbered PRD prose (the `§8` non-functional sections) gets an `NFR-` ID allocated
+  in `docs/agents/id-registry.md`, like any other sequential ID.
+
+### 4.1 Allocating IDs without collisions
+
+Sequential IDs chosen by whoever happens to be writing will collide the moment two
+deliberations or two branches run at once. Three mechanisms, chosen so that none of them
+needs a running service:
+
+**Name-derived IDs — `ENT-`, `EVT-`.** Derived from the entity or event name, not from a
+counter. Two roles cannot collide: if they pick the same name they mean the same thing,
+and if they pick different names they get different IDs. Allocated in
+`docs/data/entity-register.md`, which is the only place `ENT-` IDs come from.
+
+**`ADR-` — allocated by GitHub, not by us.** An ADR takes the number of the GitHub issue
+that produced it, or, where there is no issue, the number of its own PR. Issues and pull
+requests share one counter per repository, so the number is unique by construction, needs
+no reservation, and cannot race. Deliberation issue #12 produces `ADR-0012`.
+
+This gives up contiguity — ADR numbers will have gaps and will not be dense. That is the
+right trade: ADRs are cited by ID, not read in sequence, and a gap costs nothing while a
+collision costs a rewrite.
+
+**`THR-`, `SEC-`, `ARC-`, `INT-`, `NFR-` — single owner plus an append-only registry.**
+Each prefix has exactly one owning role (§4 table), so no cross-role collision is
+possible. Within a role, allocation happens in `docs/agents/id-registry.md`:
+
+1. Before starting work, append your rows to the registry — ID, title, owning issue.
+2. Push that as the first commit on your branch.
+3. If someone else allocated the same number meanwhile, Git raises a conflict on that
+   file. **The conflict is the detector**; resolve it by renumbering yours, not by
+   taking theirs.
+
+The registry is append-only. Rows are never deleted; a withdrawn ID has its status set to
+`Withdrawn` and keeps its row, so a document that cited it stays readable.
 
 ### Commit trailers
 
@@ -157,6 +190,13 @@ codex/integration/M2-issue-21-claude-code-adapter
 Work always begins from an issue. The single exception is this bootstrap change, which
 necessarily precedes the issue templates it introduces.
 
+### 5.1 Labels
+
+The issue forms apply labels, and GitHub silently drops any label that does not exist in
+the repository. The set is therefore declared in `.github/labels.yml` and created from
+it, so the labels are versioned with the templates that reference them rather than living
+only in repository settings.
+
 ---
 
 ## 6. Decision records
@@ -175,10 +215,41 @@ Location: `docs/decisions/`. Template: `docs/decisions/ADR-0000-template.md`.
 
 ## 7. Separation of duties
 
-- **The author of a PR does not approve or merge it.** This is `FR-M8-008` at the
-  cheapest possible price, and it applies to human and agent authors alike.
+### 7.1 What is enforceable today
+
+Not this rule, yet. The repository has one collaborator, and both agents act through that
+one identity's token. GitHub therefore sees author and approver as the same principal, so
+mandatory-approval branch protection would either block every merge or be satisfied by
+the author — enforcement theatre either way.
+
+Until the agent identity model is settled (§7.3), the interim rule is procedural and
+depends on people keeping it:
+
+- An agent opens a PR; it does not merge one. The Product Owner merges.
+- The other agent reviews before the merge, and its review is recorded as a PR comment.
+- `main` is **not** branch-protected yet. Protecting it now would encode a control we
+  cannot actually enforce, which is worse than an honest gap.
+
+### 7.2 What becomes enforceable once identity is settled
+
+- **The author of a PR does not approve or merge it.** `FR-M8-008` at the cheapest
+  possible price, applying to human and agent authors alike.
 - `main` is protected: no direct pushes, at least one approving review, and no
   self-approval.
+
+### 7.3 The blocking decision
+
+Separation of duties needs each agent to be a distinct GitHub principal. The options are
+a GitHub App or bot identity per agent, or a second human collaborator. This is a
+governance decision with a security consequence, so it is settled by ADR before branch
+protection is turned on — and before the Claude Code GitHub Action is enabled (§9,
+condition 5), which depends on it.
+
+This is `ENT-Agent` versus the runtime executing it, met early and in our own toolchain:
+the product's whole premise is that agent identity is not the same thing as the runtime
+credential it happens to act through.
+
+### 7.4 In force regardless of identity model
 - Changes to any of the following require **human** approval, not agent approval alone:
   - `.github/workflows/**` and any CI configuration
   - anything touching secrets, tokens, or credentials

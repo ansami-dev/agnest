@@ -13,3 +13,6 @@ dist/
 build/
 coverage/
 *.log
+
+# Local handoff notes for the human operator; not part of the repository.
+.handoff/

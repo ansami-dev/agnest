@@ -1,0 +1,75 @@
+# Labels referenced by the issue forms in .github/ISSUE_TEMPLATE/.
+# GitHub silently drops a label that does not exist, so this set is versioned here
+# rather than living only in repository settings. See docs/agents/roles.md §5.1.
+#
+# Apply with:
+#   gh label create "<name>" --color <color> --description "<desc>" --force
+# or iterate this file. Re-run after adding a row.
+
+- name: deliberation
+  color: "5319E7"
+  description: Design question decided by parallel positions, ending in one ADR PR
+
+- name: design
+  color: "8B5CF6"
+  description: Affects design rather than implementation
+
+- name: implementation
+  color: "0E8A16"
+  description: Work delivered on a branch and merged by PR
+
+- name: adr
+  color: "1D76DB"
+  description: Carries or amends an Architecture Decision Record
+
+- name: security
+  color: "B60205"
+  description: Owned by the Security role
+
+- name: data-design
+  color: "D93F0B"
+  description: Owned by the Data Design role
+
+- name: architecture
+  color: "0052CC"
+  description: Owned by the Architecture role
+
+- name: integration
+  color: "006B75"
+  description: Owned by the Integration role
+
+- name: protected-change
+  color: "E11D21"
+  description: Requires human approval before merge (roles.md §7)
+
+- name: blocked
+  color: "BFD4F2"
+  description: Waiting on a decision or on another work item
+
+- name: M0
+  color: "EDEDED"
+  description: Cross-cutting or project governance
+- name: M1
+  color: "EDEDED"
+  description: MVP1 — Git Foundation & Sandboxed Workspaces
+- name: M2
+  color: "EDEDED"
+  description: MVP2 — Agent Runtime Fabric
+- name: M3
+  color: "EDEDED"
+  description: MVP3 — Multi-Agent Orchestration & Groups
+- name: M4
+  color: "EDEDED"
+  description: MVP4 — Review, Quality Gates & Controlled Publish
+- name: M5
+  color: "EDEDED"
+  description: MVP5 — Repository Intelligence
+- name: M6
+  color: "EDEDED"
+  description: MVP6 — Context Intelligence & Token Economics
+- name: M7
+  color: "EDEDED"
+  description: MVP7 — Integrations & Inference Fabric
+- name: M8
+  color: "EDEDED"
+  description: MVP8 — Governance, Enterprise Security & Scale

@@ -7,12 +7,19 @@ per-MVP entity lists in each PRD §9.
 
 ---
 
-## How to use this file
+## How to use this file, and how it relates to the entity register
 
-This is the single source of truth for **what a name means**. Architecture, Security,
-Integration, and Data Design documents all draw names from here. If a document needs a
-term this file does not define, the term is added here in the same PR that first uses
-it.
+This file is the **conceptual** reference: the terms whose meaning two roles will
+otherwise blur, treated at enough length to settle the ambiguity. It is deliberately not
+exhaustive.
+
+`docs/data/entity-register.md` is the **exhaustive** catalogue — every entity named
+anywhere in the product documentation, with its `ENT-` ID and a one-line definition.
+Where the two overlap, this file is the fuller treatment and the register is the index.
+
+A name used in any Agnest document must appear in one of the two. A name in neither is a
+name two people are using differently. If a document needs a term neither file defines,
+it is added in the same PR that first uses it.
 
 Conventions:
 
