@@ -1,0 +1,83 @@
+name: Implementation
+description: A unit of work to be delivered on a branch and merged by PR.
+title: "[Impl] "
+labels: ["implementation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Implementation follows the workflow flow in `docs/agents/roles.md` §3.2:
+        branch, commits carrying `Refs:` trailers, PR, review by a role that did not
+        author it, then merge.
+
+  - type: input
+    id: mvp
+    attributes:
+      label: MVP
+      placeholder: M1
+    validations:
+      required: true
+
+  - type: dropdown
+    id: discipline
+    attributes:
+      label: Owning discipline
+      options:
+        - security
+        - data
+        - architecture
+        - integration
+    validations:
+      required: true
+
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome
+      description: What exists when this is done, stated as a result rather than an activity.
+    validations:
+      required: true
+
+  - type: textarea
+    id: refs
+    attributes:
+      label: Requirement and decision IDs served
+      description: Goes into the commit trailers verbatim.
+      placeholder: |
+        FR-M1-010, FR-M1-017, ADR-0004
+    validations:
+      required: true
+
+  - type: textarea
+    id: ids
+    attributes:
+      label: New IDs this work will allocate
+      description: Threats, controls, entities, events, components, contracts. Allocate once; never reuse.
+      placeholder: |
+        THR-M1-002, SEC-M1-004, ENT-Workspace
+
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of done
+      description: The per-discipline checklist from `docs/agents/roles.md` §10, made concrete for this work.
+    validations:
+      required: true
+
+  - type: input
+    id: branch
+    attributes:
+      label: Planned branch
+      description: "Pattern: <agent>/<discipline>/M<n>-issue-<N>-<slug>. Write issue-12, never #12."
+      placeholder: claude/security/M1-issue-12-sandbox-trust-boundary
+
+  - type: checkboxes
+    id: protected
+    attributes:
+      label: Protected-change flags
+      description: Any box ticked means human approval is required before merge (roles.md §7).
+      options:
+        - label: Touches CI workflows or `.github/workflows/**`
+        - label: Touches secrets, tokens, or credential handling
+        - label: Touches `.gitignore` in a way that could newly permit a secret-bearing path
+        - label: Amends `docs/agents/**` or the working agreements
