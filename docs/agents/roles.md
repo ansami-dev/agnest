@@ -215,41 +215,61 @@ Location: `docs/decisions/`. Template: `docs/decisions/ADR-0000-template.md`.
 
 ## 7. Separation of duties
 
-### 7.1 What is enforceable today
+### 7.1 What is enforceable today: nothing, mechanically
 
-Not this rule, yet. The repository has one collaborator, and both agents act through that
-one identity's token. GitHub therefore sees author and approver as the same principal, so
-mandatory-approval branch protection would either block every merge or be satisfied by
-the author — enforcement theatre either way.
+Two independent things block it, and it is worth naming both rather than the more
+flattering one.
 
-Until the agent identity model is settled (§7.3), the interim rule is procedural and
-depends on people keeping it:
+**Blocker A — the platform.** `ansami-dev/agnest` is a private repository on a free
+plan. GitHub answers both the branch-protection and the rulesets API with *"Upgrade to
+GitHub Pro or make this repository public to enable this feature."* There is no
+mechanical gate available on `main` at all, at any strictness, until the plan or the
+repository's visibility changes.
+
+**Blocker B — identity.** Even with protection available, the repository has one
+collaborator, and both agents act through that one identity's token. GitHub would see
+author and approver as the same principal, so a required-review rule would either block
+every merge or be satisfied by the author. Enforcement theatre either way.
+
+Fixing A alone buys nothing. Fixing B alone buys nothing. They are one decision.
+
+### 7.2 The interim rule
+
+Procedural, and it depends on people keeping it. That is an honest gap rather than a
+control:
 
 - An agent opens a PR; it does not merge one. The Product Owner merges.
 - The other agent reviews before the merge, and its review is recorded as a PR comment.
-- `main` is **not** branch-protected yet. Protecting it now would encode a control we
-  cannot actually enforce, which is worse than an honest gap.
+- `main` is **not** protected, and this document does not pretend otherwise.
 
-### 7.2 What becomes enforceable once identity is settled
+### 7.3 What becomes enforceable once both blockers clear
 
 - **The author of a PR does not approve or merge it.** `FR-M8-008` at the cheapest
   possible price, applying to human and agent authors alike.
 - `main` is protected: no direct pushes, at least one approving review, and no
   self-approval.
 
-### 7.3 The blocking decision
+### 7.4 The blocking decision
 
-Separation of duties needs each agent to be a distinct GitHub principal. The options are
-a GitHub App or bot identity per agent, or a second human collaborator. This is a
-governance decision with a security consequence, so it is settled by ADR before branch
-protection is turned on — and before the Claude Code GitHub Action is enabled (§9,
-condition 5), which depends on it.
+One deliberation settles both blockers together, because neither is useful alone:
 
-This is `ENT-Agent` versus the runtime executing it, met early and in our own toolchain:
-the product's whole premise is that agent identity is not the same thing as the runtime
-credential it happens to act through.
+| | Options |
+|---|---|
+| **Platform** | GitHub Pro; or make the repository public; or accept procedural-only indefinitely |
+| **Identity** | A GitHub App or bot identity per agent; or a second human collaborator |
 
-### 7.4 In force regardless of identity model
+Making the repository public to unlock one feature would expose the product
+documentation, threat models, and data schemas. That is a product and IP decision, not a
+technical one, and it is not made as a side effect of wanting branch protection.
+
+Settled by ADR before protection is turned on, and before the Claude Code GitHub Action
+is enabled (§9, condition 5), which depends on it.
+
+The identity half is `ENT-Agent` versus the runtime executing it, met in week one of our
+own toolchain: the product's founding premise is that agent identity is not the same
+thing as the runtime credential it happens to act through.
+
+### 7.5 In force regardless of platform or identity model
 - Changes to any of the following require **human** approval, not agent approval alone:
   - `.github/workflows/**` and any CI configuration
   - anything touching secrets, tokens, or credentials
@@ -292,9 +312,13 @@ untrusted input starting a job that holds repository secrets.
 3. **Explicit minimal `permissions:`** in every workflow file. Default `contents: read`;
    widen per job, never repository-wide.
 4. **Spending cap** configured on the API key used by the action.
-5. **Branch protection** on `main`, per §7.
+5. **Branch protection** on `main`, per §7 — which is itself blocked on the platform
+   decision in §7.4, since protection is unavailable on this repository today.
 6. **Separation of duties** enforced: an agent action may open a PR; it may not approve
-   or merge one.
+   or merge one. Also blocked on §7.4, since it needs distinct GitHub principals.
+
+Conditions 5 and 6 are not near-term. Until §7.4 is settled, the honest position is that
+this automation stays off — not that it is nearly ready.
 
 These are `THR-M3-*` class threats (approval forgery, cost-denial-of-service,
 agent-to-agent prompt injection) met in our own toolchain before we write them up as
