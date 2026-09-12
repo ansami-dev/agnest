@@ -13,7 +13,7 @@ This MVP is part of the **Git-Native Multi-Agent Engineering Control Plane** roa
 - Create and manage Projects and Git Repositories.
 - Connect Forgejo/GitHub repositories for read/fetch operations.
 - Maintain local repository mirror/cache and create isolated task worktrees.
-- Provision a sandbox through a provider abstraction, initially Docker and LXC; VM must fit the contract even if delivered later in the MVP cycle.
+- Provision a sandbox through a provider abstraction implemented in MVP1 by Incus on the local Agnest appliance VM.
 - Mount or expose the assigned workspace to the sandbox.
 - Execute commands and tests inside the sandbox.
 - Track local changes, staged state, base commit, branch, and workspace status.
@@ -28,6 +28,8 @@ This MVP is part of the **Git-Native Multi-Agent Engineering Control Plane** roa
 - Automatic PR creation or merge.
 - Organization-wide RBAC beyond a minimal local admin/operator model.
 - Advanced model routing.
+- Remote sandbox providers, remote workers, and Workspace replication between hosts.
+- Docker and Proxmox sandbox adapters; these require demonstrated demand and a later decision.
 
 ## 5. Primary Users
 
@@ -70,9 +72,9 @@ This MVP is part of the **Git-Native Multi-Agent Engineering Control Plane** roa
 - **FR-M1-004 Base commit pinning:** every workspace records exact base commit SHA.
 - **FR-M1-005 Workspace creation:** create unique workspace ID, branch, worktree path, repository link, status.
 - **FR-M1-006 Sandbox provider interface:** support create/start/stop/exec/mount-or-workspace-bind/health/destroy.
-- **FR-M1-007 Docker provider:** provision task sandbox with configurable image/resource/network profile.
-- **FR-M1-008 LXC provider:** provision or attach isolated LXC execution environment with equivalent lifecycle semantics.
-- **FR-M1-009 VM compatibility contract:** architecture must not prevent VM provider implementing the same logical operations.
+- **FR-M1-007 Local Incus provider:** provision task Sandboxes through an Incus daemon local to the Agnest appliance VM using server-owned image/resource/network profiles.
+- **FR-M1-008 Incus container modes:** system container is the required baseline; OCI application container is enabled only when its required capabilities are positively evidenced.
+- **FR-M1-009 Incus VM capability:** Incus VM uses the same logical lifecycle when nested virtualization and required capabilities are available; VM support is optional for an otherwise healthy MVP1 installation.
 - **FR-M1-010 Workspace confinement:** sandbox filesystem write access is limited to assigned workspace plus explicitly configured ephemeral paths.
 - **FR-M1-011 Command execution:** run shell command with stdout/stderr/exit code/timestamps and timeout.
 - **FR-M1-012 Test run:** execute named test command and persist result.
@@ -107,9 +109,9 @@ Persist state machine transitions and timestamps. Large command logs/diffs may r
 
 - Forgejo and GitHub: repository metadata and fetch authentication.
 - Native Git CLI/libgit operations: clone/mirror/fetch/worktree/status/diff/add/reset/restore.
-- Docker engine/API.
-- LXC/Incus integration according to deployment choice.
-- Future VM provider contract must be documented even if implementation is deferred.
+- Local Incus daemon/API through broker-owned access.
+- Incus system-container support; optional OCI application-container and VM capabilities are discovered rather than assumed.
+- Remote Incus, Docker, Proxmox, and other provider contracts are deferred until demonstrated demand.
 
 Integration credentials must be controlled by the platform, not copied into the sandbox unless explicitly required for read-only dependency access.
 
@@ -144,8 +146,8 @@ Every action must correlate `project_id`, `repository_id`, `workspace_id`, and l
 
 - Connect a Forgejo repository and fetch default branch.
 - Create two concurrent workspaces from the same base SHA without file-state interference.
-- Start Docker workspace, modify files, run a test, inspect diff, then discard without remote changes.
-- Start LXC workspace with equivalent local Git behavior.
+- Start a local Incus system-container Workspace, modify files, run a test, inspect diff, then discard without remote changes.
+- Demonstrate that unsupported Incus OCI/VM capabilities are reported explicitly and do not make the required system-container baseline unhealthy.
 - Demonstrate sandbox lacks remote push credential and a direct `git push` fails by default.
 - Restart control-plane service and recover workspace metadata/status.
 - Revert a selected file and confirm diff/test metadata becomes stale/recomputed appropriately.
@@ -153,7 +155,7 @@ Every action must correlate `project_id`, `repository_id`, `workspace_id`, and l
 
 ## 15. Dependencies
 
-External: Git, Forgejo/GitHub connectivity, Docker, LXC/Incus host capability.
+External: Git, Forgejo/GitHub connectivity, and local Incus host capability.
 Internal: base authentication/configuration, artifact/log storage, foundational API/UI shell.
 
 ## 16. Risks and Mitigations
@@ -178,11 +180,11 @@ Produce an architecture proposal covering service boundaries for Project/Reposit
 
 ## 19. Handoff — Security Agent
 
-Produce threat model and trust-boundary diagram. Specify sandbox isolation baseline for Docker and LXC, required Linux capabilities restrictions, mount rules, network policy, secret-handling rules, remote Git credential separation, malicious-repository threats, command execution controls, and audit requirements. Define minimum security conformance tests for each sandbox provider.
+Produce threat model and trust-boundary diagram. Specify the local Incus system-container isolation baseline, capability-gated OCI/VM differences, required Linux capabilities restrictions, mount rules, network policy, secret-handling rules, remote Git credential separation, malicious-repository threats, command execution controls, and audit requirements. Define minimum security conformance tests for each enabled Incus instance kind.
 
 ## 20. Handoff — Integration Agent
 
-Specify Forgejo/GitHub repository connection flows, Git credential handling, Git fetch semantics, Docker/LXC provider integration contracts, provider capability discovery, error normalization, and future VM compatibility. Identify which integrations are push vs poll and define health checks/timeouts.
+Specify Forgejo/GitHub repository connection flows, Git credential handling, Git fetch semantics, the local Incus provider contract, instance-kind capability discovery, error normalization, and health checks/timeouts. Do not invent remote-provider or Workspace-transfer semantics before a later demand-driven decision.
 
 ## 21. Handoff — Data Design Agent
 

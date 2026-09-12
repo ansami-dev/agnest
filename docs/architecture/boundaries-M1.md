@@ -3,7 +3,7 @@
 **Status:** Proposed  
 **Owner:** Architecture (Codex)  
 **Issue:** #7  
-**Decision:** `ADR-0003`  
+**Decisions:** `ADR-0003`, proposed `ADR-0011`
 **Requirements:** `FR-M1-002`, `FR-M1-003`, `FR-M1-005`, `FR-M1-006`,
 `FR-M1-010`, `FR-M1-017`, `FR-M1-018`, `FR-M1-019`
 
@@ -42,7 +42,7 @@ flowchart LR
 
     subgraph PB[Provider-broker OS identity]
         PROVIDER[ARC-M1-005<br/>Sandbox-provider broker]
-        DAEMON[Docker or Incus daemon]
+        DAEMON[Local Incus daemon]
     end
 
     subgraph FS[Host Git filesystem]
@@ -165,8 +165,10 @@ a reusable credential outside its custody.
 ### `ARC-M1-005` — Sandbox-provider broker
 
 **Responsibility.** Resolve a trusted profile and perform provider lifecycle operations
-against Docker, Incus/LXC, or a future VM adapter. It materializes product ownership and
-operation identity as labels or deterministic provider names.
+against the Incus daemon local to the Agnest appliance VM. System containers are the
+required baseline; OCI application containers and Incus VMs are capability-gated
+instance kinds. It materializes product ownership and operation identity as Incus config
+keys or deterministic instance names.
 
 **Inbound.** Authenticated local IPC carrying product identities, generation,
 deployment ID, operation ID, and server-owned profile name. MVP1 typed `exec` also
