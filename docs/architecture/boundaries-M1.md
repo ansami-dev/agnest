@@ -208,6 +208,9 @@ Probe Git metadata at sandbox start; attach `GitMetadataUnavailable` to every af
 result even when the command exits zero. Truncated output is explicit, never silent.
 After dispatch, an ambiguous execution is never retried automatically: the same command
 may still be running and is not idempotent merely because it has an `operation_id`.
+Provider observation may resolve it only when the provider advertises
+`execution-observation-by-operation-id`; otherwise explicit operator resolution is the
+only recovery path.
 
 ### `ARC-M1-007` — Recovery reconciler
 

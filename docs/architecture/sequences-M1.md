@@ -58,7 +58,7 @@ sequenceDiagram
     F->>M: inspect mirror availability
     alt mirror available
         F-->>R: OBSERVED_PRESENT
-        Note over R,F: Fetch has no attributable operation marker;<br/>retry is safe because fetch is idempotent
+        Note over R,F: Fetch has no attributable marker, so idempotent retry is safe
         R->>F: retry same operation_id
         F->>M: fetch and observe resulting refs
         F-->>R: APPLIED with post-fetch refs
@@ -108,7 +108,7 @@ provider resource.
 stateDiagram-v2
     [*] --> IntentCommitted
     IntentCommitted --> EffectAbsent: crash before external call
-    IntentCommitted --> EffectUnknown: call started; no durable result
+    IntentCommitted --> EffectUnknown: call started and no durable result
     IntentCommitted --> OutcomeRecorded: applied result recorded
     EffectAbsent --> Retried: positive absence observed
     EffectUnknown --> OutcomeRecorded: ownership label confirms effect
@@ -137,7 +137,7 @@ sequenceDiagram
     E->>E: validate cwd and execution policy
     E->>D: commit Execution intent
     E->>P: exec(sandbox UUID, generation, bounded request)
-    P->>P: reject stale generation; revalidate cwd
+    P->>P: reject stale generation and revalidate cwd
     P->>S: execute inside existing confinement
     S-->>P: stdout, stderr, exit, timestamps
     P-->>E: bounded result or typed failure
@@ -149,8 +149,9 @@ sequenceDiagram
 Timeout and cancellation produce explicit outcomes. A connection loss after dispatch is
 `UNKNOWN_OUTCOME`; the system does not automatically replay a possibly mutating command
 against either the same or a replacement generation. It blocks further execution on that
-generation until observation resolves the run or the operator explicitly resolves the
-ambiguity and creates a new intent.
+generation until an advertised execution-observation capability resolves the run or the
+operator explicitly resolves the ambiguity and creates a new intent. When the provider
+does not advertise that capability, operator resolution is the only path.
 
 ## Stop, discard, or archive
 
@@ -189,31 +190,34 @@ flow; reconciliation quarantines it.
 sequenceDiagram
     participant C as Control plane
     participant D as Metadata store
-    participant R as Reconciler
+    participant REC as Reconciler
     participant W as Git workspace service
+    participant E as Execution gateway
     participant P as Provider broker
 
     C->>D: load durable deployment_id
-    C->>R: start reconciliation pass(deployment_id)
-    R->>D: load unresolved intents and expected resources
+    C->>REC: start reconciliation pass(deployment_id)
+    REC->>D: load unresolved intents and expected resources
     par observe filesystem
-        R->>W: observe expected and owned worktrees
-        W-->>R: PRESENT, ABSENT, or UNOBSERVABLE with evidence
+        REC->>W: observe expected and owned worktrees
+        W-->>REC: PRESENT, ABSENT, or UNOBSERVABLE with evidence
     and observe provider
-        R->>P: observe resources by deployment/workspace/generation labels
-        P-->>R: PRESENT, ABSENT, or UNOBSERVABLE with evidence
+        REC->>E: observe sandbox resources through application port
+        E->>P: observe by deployment, workspace, and generation labels
+        P-->>E: PRESENT, ABSENT, or UNOBSERVABLE with evidence
+        E-->>REC: normalized observation
     end
-    R->>D: persist attributed observations and counts
+    REC->>D: persist attributed observations and counts
     loop each discrepancy
         alt safe retry of committed intent
-            R->>R: invoke same application port and operation_id
+            REC->>REC: invoke owning application port with same operation_id
         else owned provider orphan
-            R->>R: stop or quarantine
-            Note over R,D: destroy only after age and observation thresholds
+            REC->>E: stop or quarantine through application port
+            Note over REC,D: destroy only after age and observation thresholds
         else unowned worktree
-            R->>W: quarantine; preserve unpublished files
+            REC->>W: quarantine and preserve unpublished files
         else foreign or inconclusive
-            R->>D: block mutation and request operator resolution
+            REC->>D: block mutation and request operator resolution
         end
     end
 ```
@@ -230,7 +234,7 @@ passes. A restart neither resets it nor counts as evidence by itself.
 | Worktree create interrupted | Git workspace service | Intent plus filesystem observation | Reconciler through Workspace port |
 | Provider create response lost | Provider broker | Intent plus provider labels/observation | Reconciler through Provider port |
 | Sandbox crashes | Provider broker observes; control plane owns lifecycle | Sandbox condition and operation history | Reconciler/operator |
-| Command transport lost | Execution gateway | `UNKNOWN_OUTCOME`; no automatic retry or retarget | Operator/provider observation |
+| Command transport lost | Execution gateway | `UNKNOWN_OUTCOME`; no automatic retry or retarget | Advertised execution observation, otherwise operator |
 | Metadata store unavailable | Control plane | No uncommitted external action may begin | Retry after store health returns |
 | Workspace root unavailable | Git workspace service | `UNOBSERVABLE`, never inferred absent | Reconciler after root returns |
 | Deployment identity missing | Control plane | Existing provider resources remain foreign/unmodified | Explicit operator recovery |

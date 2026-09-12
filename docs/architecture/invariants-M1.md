@@ -82,6 +82,11 @@ The caller selects only a trusted profile name plus product identities. The prov
 broker resolves image, user, mounts, devices, privileges, network policy, and limits.
 It rejects a caller-provided raw provider specification.
 
+`execution-observation-by-operation-id` is an optional declared provider capability. A
+supporting provider retains enough bounded execution state to distinguish in-flight,
+completed, and absent runs until the gateway acknowledges the result. Absence of the
+capability is explicit and sends every ambiguous execution to operator resolution.
+
 ### M1-I12 — Generation prevents stale retargeting
 
 An `exec` or lifecycle request addresses `(sandbox_uuid, generation)`. A mismatch fails;
@@ -123,9 +128,10 @@ observes before create.
 
 Execution is the exception to resource retry: after dispatch, a Command Run or Test Run
 with `UNKNOWN_OUTCOME` is never automatically dispatched again, even to the same
-generation. Further execution on that generation is blocked until provider observation
-resolves the run, or the operator explicitly resolves the ambiguity and accepts the
-effect of a new intent.
+generation. Further execution on that generation is blocked until an advertised
+execution-observation capability resolves the run, or the operator explicitly resolves
+the ambiguity and accepts the effect of a new intent. A provider without that capability
+cannot claim automated execution recovery.
 
 ### M1-I18 — Operation state and resource observation do not mix
 
