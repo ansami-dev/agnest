@@ -46,14 +46,14 @@ Status values: `Reserved` (allocated, work in progress) · `Active` · `Withdraw
 
 | ID | Title | Issue | Status |
 |---|---|---|---|
-| `ARC-M1-001` | MVP1 modular control plane | #3 | Reserved |
-| `ARC-M1-002` | Repository service | #3 | Reserved |
-| `ARC-M1-003` | Git workspace service | #3 | Reserved |
-| `ARC-M1-004` | Credentialed-fetch broker | #3 | Reserved |
-| `ARC-M1-005` | Sandbox-provider broker | #3 | Reserved |
-| `ARC-M1-006` | Execution gateway | #3 | Reserved |
-| `ARC-M1-007` | Recovery reconciler | #3 | Reserved |
-| `ARC-M1-008` | Task sandbox boundary | #3 | Reserved |
+| `ARC-M1-001` | MVP1 modular control plane | #3 | Active |
+| `ARC-M1-002` | Repository service | #3 | Active |
+| `ARC-M1-003` | Git workspace service | #3 | Active |
+| `ARC-M1-004` | Credentialed-fetch broker | #3 | Active |
+| `ARC-M1-005` | Sandbox-provider broker | #3 | Active |
+| `ARC-M1-006` | Execution gateway | #3 | Active |
+| `ARC-M1-007` | Recovery reconciler | #3 | Active |
+| `ARC-M1-008` | Task sandbox boundary | #3 | Active |
 
 ## `INT-` — Integration contracts · owner: Integration
 

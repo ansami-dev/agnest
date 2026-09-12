@@ -45,4 +45,4 @@ question is on the record, and that the ADR cannot arrive without one.
 
 | ID | Title | Status | Decides for |
 |---|---|---|---|
-| — | — | — | — |
+| [ADR-0003](ADR-0003-mvp1-component-authority-boundaries.md) | Enforce three authority boundaries around the MVP1 modular control plane | Accepted | MVP1 |

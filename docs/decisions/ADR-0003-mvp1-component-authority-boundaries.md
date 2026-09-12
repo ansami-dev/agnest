@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Originating issue** | #3 |
 | **Supersedes** | none |
 | **Deciders** | Architecture, Integration, Security, Data Design |
@@ -345,6 +345,10 @@ overwriting newer state.
   records a workspace-scoped generation and provider reference.
 - Intent, projection version, transition history, ownership labels, and durable
   reconciliation observations are first-class persisted data.
+- The database enforces at most one non-terminal sandbox binding per workspace, and
+  generation allocation is atomic with binding and create-intent insertion.
+- A compensation intent has its own operation identity and an explicit
+  `compensates_operation_id` link to the original intent.
 - Database schemas must make projection-only mutation and non-atomic blocking guards
   structurally impossible or detectably invalid.
 
