@@ -1,6 +1,7 @@
 # ADR-0000: <one decision, stated as a decision>
 
-<!-- Copy this file to ADR-<nnnn>-<kebab-slug>.md. Do not edit the template in place. -->
+<!-- Copy this file to ADR-<nnnn>-<kebab-slug>.md, where <nnnn> is the originating
+     GitHub issue number. Do not edit the template in place. -->
 
 | | |
 |---|---|
@@ -8,7 +9,7 @@
 | **Date** | YYYY-MM-DD |
 | **MVP** | M<n> |
 | **Coordinator** | <role> |
-| **Deliberation** | # (issue, if any) |
+| **Originating issue** | # (required — the ADR number is this issue's number) |
 | **Supersedes** | ADR-<nnnn> (or none) |
 | **Requirements** | `FR-…`, `NFR-…` |
 

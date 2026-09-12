@@ -9,7 +9,7 @@
 | **Closes issue** | # |
 | **Requirements served** | `FR-…`, `NFR-…` |
 | **Decisions applied** | `ADR-…` (or none) |
-| **IDs allocated here** | `THR-…`, `SEC-…`, `ENT-…`, `EVT-…`, `ARC-…`, `INT-…` (or none) |
+| **IDs allocated here** | `THR-M<n>-…`, `SEC-M<n>-…`, `ARC-M<n>-…`, `INT-M<n>-…`, `NFR-M<n>-…` (registry) · `ENT-…`, `EVT-…` (name-derived) · or none |
 
 Commit trailers must already carry these — see `docs/agents/roles.md` §4.
 
@@ -32,6 +32,8 @@ Commit trailers must already carry these — see `docs/agents/roles.md` §4.
 ## Checks
 
 - [ ] New or changed terms are defined in `docs/glossary.md`, and no term is used in a sense that file contradicts
+- [ ] New entities are in `docs/data/entity-register.md` and new event types in `docs/data/event-register.md` — events are not filed as entities
+- [ ] Any ADR here cites an originating issue; no ADR takes a PR number
 - [ ] No accepted ADR was edited; any reversal is a new ADR carrying `Supersedes:`
 - [ ] No secret, token, or credential value appears in the diff, in test fixtures, or in example config
 - [ ] Cross-document links resolve

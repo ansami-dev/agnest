@@ -13,11 +13,13 @@ This file is the **conceptual** reference: the terms whose meaning two roles wil
 otherwise blur, treated at enough length to settle the ambiguity. It is deliberately not
 exhaustive.
 
-`docs/data/entity-register.md` is the **exhaustive** catalogue — every entity named
-anywhere in the product documentation, with its `ENT-` ID and a one-line definition.
-Where the two overlap, this file is the fuller treatment and the register is the index.
+`docs/data/entity-register.md` is the **exhaustive** catalogue of things that exist —
+every entity named anywhere in the product documentation, with its `ENT-` ID and a
+one-line definition. `docs/data/event-register.md` is the same for things that happened,
+carrying `EVT-` IDs. Where any of them overlap this file, this file is the fuller
+treatment and the registers are the index.
 
-A name used in any Agnest document must appear in one of the two. A name in neither is a
+A name used in any Agnest document must appear in one of the three. A name in neither is a
 name two people are using differently. If a document needs a term neither file defines,
 it is added in the same PR that first uses it.
 
@@ -83,6 +85,18 @@ The whole point of MVP2 is that these are six different things.
 
 `Agent != Harness`, `Agent != Sandbox`, `Agent != Model` (principles P1–P3). Changing
 the runtime must not create a new Agent record (`FR-M2-016`).
+
+### Entity vs Event
+
+| | |
+|---|---|
+| **Entity** | A thing that exists. Has a current state, is updated in place, and is migrated when its shape changes. Catalogued in `docs/data/entity-register.md` as `ENT-<PascalName>`. |
+| **Event** | A thing that happened. Immutable once written, never updated, and versioned by payload rather than migrated. Catalogued in `docs/data/event-register.md` as `EVT-<PascalName>`. |
+
+`ENT-Workspace` is the workspace; `EVT-WorkspaceDiscarded` is the moment one was thrown
+away. Two registers, because the identity, retention, and versioning rules genuinely
+differ — and because MVP3's recovery story depends on events being replayable, which
+requires that nothing ever edits one.
 
 ### Artifact vs Finding vs Decision vs Approval vs Handoff
 

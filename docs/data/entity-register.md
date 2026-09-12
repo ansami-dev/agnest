@@ -22,9 +22,13 @@ columns, some value objects, some event payload fields. Modelling decisions land
 
 ## Rules
 
-1. **IDs are allocated here and only here.** `ENT-<PascalName>` is name-derived rather
-   than sequential, so two roles working in parallel cannot collide on one
+1. **`ENT-` IDs are allocated here and only here.** `ENT-<PascalName>` is name-derived
+   rather than sequential, so two roles working in parallel cannot collide on one
    (see `docs/agents/roles.md` §4.1).
+   **Event types do not belong here.** `EVT-` IDs are allocated in
+   `docs/data/event-register.md`. An entity is a thing that exists; an event is a thing
+   that happened. If an entry is named for something that occurred at a point in time, it
+   is an event and belongs in the other register.
 2. **Renaming an entity allocates a new ID.** The old row stays, marked superseded, so
    documents that cited it remain readable.
 3. **A name used in any Agnest document must appear here or in the glossary.** A name in

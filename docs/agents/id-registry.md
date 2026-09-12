@@ -18,9 +18,12 @@ number is never handed to anything else.
 
 Two families are **not** allocated here, because they cannot collide:
 
-- `ENT-` and `EVT-` are name-derived, and live in `docs/data/entity-register.md`.
-- `ADR-` takes the number of the GitHub issue that produced it, or of its own PR.
-  Issues and PRs share one counter per repository, so GitHub allocates it for us.
+- `ENT-` is name-derived and lives in `docs/data/entity-register.md`.
+- `EVT-` is name-derived and lives in `docs/data/event-register.md`. Separate from the
+  entity register: an entity is a thing that exists, an event is a thing that happened.
+- `ADR-` takes the number of the GitHub issue that produced it. Every ADR has an
+  originating issue — including single-role decisions — so there is no fallback and
+  nothing to reserve.
 
 Status values: `Reserved` (allocated, work in progress) · `Active` · `Withdrawn` ·
 `Superseded by <ID>`.
@@ -47,9 +50,14 @@ Status values: `Reserved` (allocated, work in progress) · `Active` · `Withdraw
 
 ## `INT-` — Integration contracts · owner: Integration
 
-| ID | Title | Issue | Status |
-|---|---|---|---|
-| — | — | — | — |
+MVP-scoped, not provider-scoped. The provider or harness a contract currently targets is
+metadata on the contract, recorded in the Provider column and in the contract document —
+never in the ID. A contract keeps its identity when its implementation is swapped,
+renamed, or extended to a second provider.
+
+| ID | Title | Provider(s) | Issue | Status |
+|---|---|---|---|---|
+| — | — | — | — | — |
 
 ## `NFR-` — Non-functional requirements · owner: first citing role
 
