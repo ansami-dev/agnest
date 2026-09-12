@@ -64,12 +64,12 @@ renamed, or extended to a second provider.
 
 | ID | Title | Provider(s) | Issue | Status |
 |---|---|---|---|---|
-| `INT-M1-001` | Repository host metadata | GitHub, Forgejo | #9 | Reserved |
-| `INT-M1-002` | Credentialed repository fetch | Native Git, GitHub, Forgejo | #9 | Reserved |
-| `INT-M1-003` | Git workspace operations | Native Git | #9 | Reserved |
-| `INT-M1-004` | Sandbox provider lifecycle | Docker, Incus/LXC, future VM providers | #9 | Reserved |
-| `INT-M1-005` | Sandboxed command execution | Docker, Incus/LXC, future VM providers | #9 | Reserved |
-| `INT-M1-006` | Provider capability and health discovery | Docker, Incus/LXC, future VM providers | #9 | Reserved |
+| `INT-M1-001` | Repository host metadata | GitHub, Forgejo | #9 | Active |
+| `INT-M1-002` | Credentialed repository fetch | Native Git, GitHub, Forgejo | #9 | Active |
+| `INT-M1-003` | Git workspace operations | Native Git | #9 | Active |
+| `INT-M1-004` | Sandbox provider lifecycle | Docker, Incus/LXC, future VM providers | #9 | Active |
+| `INT-M1-005` | Sandboxed command execution | Docker, Incus/LXC, future VM providers | #9 | Active |
+| `INT-M1-006` | Provider capability and health discovery | Docker, Incus/LXC, future VM providers | #9 | Active |
 
 ## `NFR-` — Non-functional requirements · owner: first citing role
 

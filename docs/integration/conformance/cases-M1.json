@@ -1,0 +1,187 @@
+{
+  "schemaVersion": 1,
+  "suite": "MVP1 integration contracts",
+  "issue": 9,
+  "cases": [
+    {
+      "id": "CONF-M1-001",
+      "contract": "INT-M1-001",
+      "providers": ["github", "forgejo"],
+      "assertion": "Repository inspection returns normalized metadata and never an authenticated URL or credential value."
+    },
+    {
+      "id": "CONF-M1-002",
+      "contract": "INT-M1-001",
+      "providers": ["github", "forgejo"],
+      "assertion": "A redirect to a different canonical origin fails with ORIGIN_MISMATCH and is not followed with credentials."
+    },
+    {
+      "id": "CONF-M1-003",
+      "contract": "INT-M1-001",
+      "providers": ["github", "forgejo"],
+      "assertion": "Health performs a finite authenticated read-only repository probe and causes no remote mutation."
+    },
+    {
+      "id": "CONF-M1-004",
+      "contract": "INT-M1-002",
+      "providers": ["git"],
+      "assertion": "A fetch request containing user information, an unregistered origin, refspec, config override, or arbitrary output path is rejected before network or filesystem mutation."
+    },
+    {
+      "id": "CONF-M1-005",
+      "contract": "INT-M1-002",
+      "providers": ["git"],
+      "assertion": "Fetch runs with hooks, credential helpers, protocol.ext, recursive submodules, and uncontrolled environment disabled."
+    },
+    {
+      "id": "CONF-M1-006",
+      "contract": "INT-M1-002",
+      "providers": ["git"],
+      "assertion": "Retrying one ambiguous fetch with the same operation_id converges without changing any pinned Workspace base SHA."
+    },
+    {
+      "id": "CONF-M1-007",
+      "contract": "INT-M1-002",
+      "providers": ["git"],
+      "assertion": "An unavailable mirror root reports UNOBSERVABLE rather than NOT_FOUND or OBSERVED_ABSENT."
+    },
+    {
+      "id": "CONF-M1-008",
+      "contract": "INT-M1-003",
+      "providers": ["git"],
+      "assertion": "Two Workspaces from one pinned SHA use distinct working trees and cannot observe each other's index or untracked files."
+    },
+    {
+      "id": "CONF-M1-009",
+      "contract": "INT-M1-003",
+      "providers": ["git"],
+      "assertion": "A symlink or path replacement escaping the allocated Workspace root is rejected after real-path revalidation at use time."
+    },
+    {
+      "id": "CONF-M1-010",
+      "contract": "INT-M1-003",
+      "providers": ["git"],
+      "assertion": "Stage, unstage, and restore reject a stale expected Workspace revision with CONFLICT."
+    },
+    {
+      "id": "CONF-M1-011",
+      "contract": "INT-M1-003",
+      "providers": ["git"],
+      "assertion": "Workspace revision inputs change for tracked content, index state, untracked paths, and untracked content; HEAD alone is insufficient."
+    },
+    {
+      "id": "CONF-M1-012",
+      "contract": "INT-M1-003",
+      "providers": ["git"],
+      "assertion": "An orphan worktree containing unpublished changes is quarantined and never automatically deleted."
+    },
+    {
+      "id": "CONF-M1-013",
+      "contract": "INT-M1-004",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "Create accepts only product identities, generation, operation_id, profile name, and Workspace projection handle; raw provider specifications are rejected."
+    },
+    {
+      "id": "CONF-M1-014",
+      "contract": "INT-M1-004",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "Ownership and operation identity are established atomically in the provider create call."
+    },
+    {
+      "id": "CONF-M1-015",
+      "contract": "INT-M1-004",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "Retry with the same operation_id observes the existing owned resource before create and does not create a duplicate."
+    },
+    {
+      "id": "CONF-M1-016",
+      "contract": "INT-M1-004",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "A stale generation fails with STALE_GENERATION and is never redirected to the current generation."
+    },
+    {
+      "id": "CONF-M1-017",
+      "contract": "INT-M1-004",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "The sandbox cannot access the bare mirror, Git administration, sibling Workspaces, control-plane or blob roots, broker endpoints, daemon endpoints, or Git credentials."
+    },
+    {
+      "id": "CONF-M1-018",
+      "contract": "INT-M1-004",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "Destroy rejects foreign or missing ownership, stale generation, unavailable authority, and insufficient durable observation evidence."
+    },
+    {
+      "id": "CONF-M1-019",
+      "contract": "INT-M1-005",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "Execution uses argv without implicit shell interpolation and rejects an environment name outside the allowlist."
+    },
+    {
+      "id": "CONF-M1-020",
+      "contract": "INT-M1-005",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "The working directory is revalidated inside the assigned Workspace projection immediately before execution."
+    },
+    {
+      "id": "CONF-M1-021",
+      "contract": "INT-M1-005",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "Output beyond the configured bound is explicitly marked truncated and raw output never appears in the normalized error envelope."
+    },
+    {
+      "id": "CONF-M1-022",
+      "contract": "INT-M1-005",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "A deadline or lost response after dispatch becomes UNKNOWN_OUTCOME and blocks further execution on that generation."
+    },
+    {
+      "id": "CONF-M1-023",
+      "contract": "INT-M1-005",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "A provider without execution-observation-by-operation-id requires explicit operator resolution and never automatically redispatches."
+    },
+    {
+      "id": "CONF-M1-024",
+      "contract": "INT-M1-005",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "Cancellation distinguishes requested, delivered, and process-exit-confirmed; only the final state proves termination."
+    },
+    {
+      "id": "CONF-M1-025",
+      "contract": "INT-M1-005",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "When Git metadata is hidden, every Command Run and Test Run reports GitMetadataUnavailable even if exit code is zero."
+    },
+    {
+      "id": "CONF-M1-026",
+      "contract": "INT-M1-006",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "Unknown or unevidenced capabilities remain UNKNOWN or UNSUPPORTED and cannot satisfy a required profile capability."
+    },
+    {
+      "id": "CONF-M1-027",
+      "contract": "INT-M1-006",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "A provider, host, or adapter version change invalidates the prior immutable capability snapshot."
+    },
+    {
+      "id": "CONF-M1-028",
+      "contract": "INT-M1-006",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "Profile evaluation reports every required, missing, degraded, and satisfied capability without creating a resource."
+    },
+    {
+      "id": "CONF-M1-029",
+      "contract": "INT-M1-006",
+      "providers": ["docker", "incus", "vm"],
+      "assertion": "Provider unavailability yields UNAVAILABLE and cannot be interpreted as resource absence."
+    },
+    {
+      "id": "CONF-M1-030",
+      "contract": "INT-M1-001,INT-M1-002,INT-M1-004,INT-M1-005,INT-M1-006",
+      "providers": ["github", "forgejo", "git", "docker", "incus", "vm"],
+      "assertion": "Logs and safe diagnostics contain no credential, authenticated URL, uncontrolled provider error body, environment value, or raw command output."
+    }
+  ]
+}
