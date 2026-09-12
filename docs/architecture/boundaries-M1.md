@@ -3,7 +3,7 @@
 **Status:** Proposed  
 **Owner:** Architecture (Codex)  
 **Issue:** #7  
-**Decisions:** `ADR-0003`, proposed `ADR-0011`
+**Decisions:** `ADR-0003`, `ADR-0011`
 **Requirements:** `FR-M1-002`, `FR-M1-003`, `FR-M1-005`, `FR-M1-006`,
 `FR-M1-010`, `FR-M1-017`, `FR-M1-018`, `FR-M1-019`
 

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-09-13 |
 | **MVP** | MVP1 |
 | **Coordinator** | Architecture (Codex) |

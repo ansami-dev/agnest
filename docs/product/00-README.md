@@ -5,7 +5,7 @@ This documentation bundle defines the full product vision and staged product req
 ## Product Principles
 
 1. **Harness agnostic** — Agent identity and workflow are not tied to Hermes, Claude Code, Codex, OMP, or any single runtime.
-2. **Sandbox agnostic** — Docker, LXC, VM, and future execution backends are implementation choices behind a stable interface.
+2. **Sandbox agnostic** — MVP1 implements local Incus behind a stable interface; additional local or remote execution backends are demand-driven choices.
 3. **Model agnostic** — Frontier, local, and routed models can be selected by policy without changing the agent identity.
 4. **Git native** — Repository, branch, worktree, diff, commit, review, publish, and pull request are first-class product concepts.
 5. **A2A native** — Agent interoperability is standardized through Agent2Agent concepts, with adapters for non-native runtimes.
