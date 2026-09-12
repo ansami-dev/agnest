@@ -81,6 +81,7 @@ authenticated principal may distinguish absence.
 
 Health performs finite, authenticated, read-only probes for every configured origin role:
 repository metadata for `API`, and a non-mutating remote reference observation for `GIT`.
-Failure is reported per role. A general provider status page is diagnostic only. The
-adapter records the provider API version when exposed and must tolerate additive response
-fields.
+The `GIT`-role probe is delegated to the credentialed-fetch broker under `INT-M1-002`;
+the `INT-M1-001` API adapter cannot obtain or hold the `GIT` credential binding. Failure
+is reported per role. A general provider status page is diagnostic only. The adapter
+records the provider API version when exposed and must tolerate additive response fields.

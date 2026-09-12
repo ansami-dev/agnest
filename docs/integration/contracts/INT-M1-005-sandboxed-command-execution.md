@@ -45,6 +45,12 @@ namespace already bound to that Workspace and authenticated principal. Any misma
 stream over authenticated IPC; the broker never receives a blob reference and has no
 authority to dereference the blob store.
 
+The caller-upload path does not add a blob-store writer. Caller bytes pass through the
+Control API to the scoped Execution adapter, which alone writes the immutable input blob
+and binds its reference to the pre-authorized Workspace/principal namespace. The Control
+API and caller never receive blob-root or direct write authority. Retention and expiry are
+Data Design policy; expiry cannot widen access or move a reference between scopes.
+
 The broker verifies the current lease and exact generation, then resolves and revalidates
 the working directory beneath the assigned Workspace projection at execution time. A
 stale generation returns `STALE_GENERATION` and is never redirected.
