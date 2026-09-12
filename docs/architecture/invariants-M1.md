@@ -82,6 +82,13 @@ The caller selects only a trusted profile name plus product identities. The prov
 broker resolves image, user, mounts, devices, privileges, network policy, and limits.
 It rejects a caller-provided raw provider specification.
 
+Capability evidence is keyed and evaluated per Incus instance kind. Each immutable
+snapshot records daemon identity/version, adapter version, host-capability fingerprint,
+observation/expiry time, and the evidence for that kind. A Sandbox binding pins the
+snapshot that authorized it. Evidence is never inherited between system container, OCI
+application container, and VM, and an expired or invalidated snapshot cannot satisfy a
+profile.
+
 `execution-observation-by-operation-id` is an optional declared provider capability. A
 supporting provider retains enough bounded execution state to distinguish in-flight,
 completed, and absent runs until the gateway acknowledges the result. Absence of the
@@ -189,7 +196,7 @@ and requires explicit operator recovery; resources are never silently relabeled.
 |---|---|
 | M1-I01–M1-I04, M1-I24–M1-I25 | Process identity/environment inspection, IPC authorization tests, sandbox network and mount denial tests, dependency-rule architecture test, blob-root access checks, deployment-identity restart/upgrade/loss tests |
 | M1-I05–M1-I10 | Git integration tests with two concurrent Workspaces, fetch during active work, path-escape fixtures, stale-result tests |
-| M1-I11–M1-I15 | Provider conformance suite, hostile profile/request fixtures, stale-generation test, timeout/cancellation/output tests, zero-exit Git-version fallback fixture |
+| M1-I11–M1-I15 | Per-instance-kind provider conformance suite, cross-kind evidence-reuse rejection, snapshot invalidation and health-calculation tests, hostile profile/request fixtures, stale-generation test, timeout/cancellation/output tests, zero-exit Git-version fallback fixture |
 | M1-I16–M1-I21 | Database transaction tests, failpoint crash matrix, stop-start-stop identity test, projection drift injection, concurrency race tests |
 | M1-I22–M1-I23 | Reconciliation tests across restart, unavailable volumes, foreign labels, observation thresholds, and unpublished orphan worktrees |
 

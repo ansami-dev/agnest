@@ -36,6 +36,10 @@ MVP1 implements one sandbox provider: an Incus daemon local to the Agnest applia
 `ARC-M1-005` reaches it through broker-owned local access; the control plane and task
 sandboxes never receive the Incus socket or daemon authority.
 
+Only the sandbox-provider broker OS identity may hold `incus-admin` membership or any
+equivalent group, ACL, credential, or socket grant that confers Incus daemon authority.
+The control-plane and credentialed-fetch broker identities must not hold any such grant.
+
 Incus instance kinds are treated as capability variants, not separate providers:
 
 - **System container** is the required MVP1 baseline and acceptance-test target.
@@ -47,6 +51,24 @@ Incus instance kinds are treated as capability variants, not separate providers:
 
 Unknown capabilities remain unsupported. No instance kind inherits another kind's
 conformance result.
+
+Capability evidence is recorded separately for each Incus instance kind. An immutable
+snapshot identifies the instance kind, Incus daemon identity and version, adapter
+version, host-capability fingerprint, and observation time. A Sandbox binding pins the
+exact snapshot that authorized its profile; it never resolves through an unversioned
+"current snapshot" reference.
+
+A snapshot becomes ineligible after its expiry or after a change to daemon identity or
+version, adapter version, or host-capability fingerprint. Broker/appliance startup and
+host migration trigger fresh discovery before an optional instance kind can be selected.
+Evidence for a system container cannot authorize an OCI application container or VM, and
+the reverse also holds.
+
+Provider health is computed from reachability plus capabilities required by the MVP1
+system-container baseline. An unavailable optional OCI or VM capability is reported in
+its per-kind capability result and does not degrade overall provider health. A request
+for such an unavailable kind fails as unsupported without declaring the local Incus
+provider unhealthy.
 
 MVP1 does not implement or specify:
 
@@ -97,7 +119,10 @@ Workspace transfer threats are not MVP1 controls.
 
 Provider placement need not model remote workers or Workspace replicas in MVP1. Sandbox
 bindings still persist provider kind, Incus instance kind, generation, profile version,
-capability snapshot, and opaque Incus resource reference.
+an immutable per-kind capability-snapshot reference, and opaque Incus resource reference.
+The snapshot schema includes daemon identity/version, adapter version, host-capability
+fingerprint, observation/expiry times, evidence status, and invalidation reason. Data
+Design owns the exact entity and constraints without weakening those keys.
 
 ## Options considered
 
@@ -118,8 +143,14 @@ commitment.
 
 - MVP1 dependency manifests and deployment docs install Incus, not Docker or Proxmox.
 - The provider broker uses only local Incus access and rejects caller-supplied endpoints.
+- Only the provider-broker identity has `incus-admin` or equivalent daemon authority;
+  control-plane and fetch-broker identities fail an Incus socket/API access test.
 - System-container conformance is mandatory; OCI and VM conformance run independently
   only when their capabilities are advertised.
+- Cross-kind evidence reuse is rejected. Daemon, adapter, or host-capability changes and
+  snapshot expiry force rediscovery before profile eligibility is evaluated.
+- Provider health remains healthy when its required system-container baseline passes and
+  an optional OCI/VM kind is unavailable.
 - No MVP1 contract contains remote-worker, Workspace-transfer, Docker, or Proxmox
   behavior.
 - Product, Architecture, Integration, Security, and Data Design artifacts cite this ADR

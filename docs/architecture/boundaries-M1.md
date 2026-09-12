@@ -178,12 +178,18 @@ output limit, and cancellation identity.
 **Outbound dependencies.** Provider daemon/API, trusted profile catalogue, and its
 broker-owned resource map.
 
-**Authority.** Provider-daemon authority. It never receives Git credentials, arbitrary
-container specifications, or application-database access.
+**Authority.** Provider-daemon authority. Only this broker's OS identity may hold
+`incus-admin` membership or an equivalent daemon grant; the control-plane and fetch-broker
+identities must not. It never receives Git credentials, arbitrary container
+specifications, or application-database access.
 
 **Failure behavior.** Unknown capability means unsupported. Retries observe by ownership
 labels before create. A stale `(sandbox_uuid, generation)` is rejected, never retargeted.
 Ambiguous daemon outcomes are returned as `UNKNOWN_OUTCOME` for reconciliation.
+Provider health is computed from daemon reachability and capabilities required by the
+system-container baseline. An unavailable optional OCI/VM kind is a capability fact, not
+overall degradation. Capability evidence is immutable, per instance kind, pinned by the
+Sandbox binding, and invalidated by expiry or daemon, adapter, or host-capability change.
 
 Ownership and operation identity must be established atomically in the provider create
 call, using labels in the create specification or a deterministic provider name. A
