@@ -85,4 +85,4 @@ cited by ID.
 | `NFR-M1-005` | Path normalization and traversal protection | #18 | Active |
 | `NFR-M1-006` | Memory-bounded operation on large repositories | #18 | Active |
 | `NFR-M1-007` | Explicit intent and audit for destructive Git operations | #18 | Active |
-| `NFR-M1-008` | Appliance storage availability under untrusted execution | #18 | Reserved |
+| `NFR-M1-008` | Appliance storage availability under untrusted execution | #18 | Active |
