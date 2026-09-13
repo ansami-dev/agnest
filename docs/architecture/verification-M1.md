@@ -55,23 +55,27 @@ normative wording.
 
 | ID | Normative requirement | Measurement and threshold | Failure evidence |
 |---|---|---|---|
-| `NFR-M1-001` | A Workspace created from a warm local mirror meets the 15-second target, excluding sandbox cold boot. | On the baseline reference appliance from Issue #19, run 3 unmeasured warm-ups and at least 30 measured serial creates from already-present pinned SHAs. Measure from accepted, durably identified request to usable Worktree plus committed `READY` projection. No fetch or sandbox provisioning is inside the interval. The p95 must be `<= 15.0 s`; report median, p95, maximum, and failures. | Timing samples, spans, fixture ID, and failed operation transitions. A functional failure never disappears from the performance sample set. |
+| `NFR-M1-001` | A Workspace created from a warm local mirror meets the 15-second target, excluding sandbox cold boot. | On the baseline reference appliance from Issue #19, run 3 unmeasured warm-ups and exactly 30 measured serial creates from already-present pinned SHAs. Measure from accepted, durably identified request to usable Worktree plus committed `READY` projection. No fetch or sandbox provisioning is inside the interval. At least 29 of 30 samples must be `<= 15.0 s`; report the passing count, median, p95, maximum, and failures. | Timing samples, spans, fixture ID, and failed operation transitions. A functional failure counts as exceeding the target and never disappears from the sample set. |
 | `NFR-M1-002` | Every Git state transition is idempotent or returns a recoverable conflict. | For every mutating Git operation, replay the same persisted intent and identical canonical input before response, after response, and after restart. It must produce at most one effect and the same terminal reference. Reusing the key with different canonical input, or using a stale expected revision, must return a typed non-retryable-without-change conflict and leave state unchanged. | Intent/transition rows, operation ID, before/after Git observations, normalized result, and absence of a second effect. |
-| `NFR-M1-003` | Workspace operations tolerate process restart without losing canonical Git state. | Inject termination at every boundary between intent commit, effect dispatch, effect completion, observation, projection update, and response. After restart, reconciliation must converge within two completed reconciliation cycles when dependencies are observable. Git content/index/base SHA must be unchanged except for the intended effect. An unobservable effect remains explicitly blocked/unknown rather than guessed. | Failpoint, persisted intent history, pre/post Git object and revision evidence, reconciliation observations, projection version, and terminal or blocked reason. |
-| `NFR-M1-004` | Sandbox resource limits are configurable. | At minimum, named server-owned profiles configure CPU, memory, and process-count limits independently. Two distinct configurations must be observable as their effective Incus values. A workload exceeding each enforced limit must be constrained or terminated with a normalized outcome. Optional disk/I/O controls are capability-reported; absence cannot be silently treated as enforcement. | Requested profile name, immutable capability snapshot, effective provider configuration, workload observation, and normalized limit outcome. |
+| `NFR-M1-003` | Workspace operations tolerate process restart without losing canonical Git state. | Inject termination at every boundary between intent commit, effect dispatch, effect completion, observation, projection update, and response. After restart, every observable intent must reach its correct stable classification within two completed reconciliation cycles: terminal when resolution is justified, or an explicit evidence-waiting/quarantined classification carrying the next required observation. Evidence-gated reclamation is excluded from the two-cycle terminal bound and retains the grace/count required by `M1-I22`; an unobservable effect remains explicitly blocked/unknown rather than guessed. Git content/index/base SHA must be unchanged except for the intended effect. | Failpoint, persisted intent history, pre/post Git object and revision evidence, reconciliation observations, projection version, and terminal or blocking classification with its next required evidence. |
+| `NFR-M1-004` | Sandbox resource limits are configurable without allowing an untrusted task to exhaust appliance-critical storage. | At minimum, named server-owned profiles configure CPU, memory, and process-count limits independently. Two distinct configurations must be observable as their effective Incus values. A workload exceeding each enforced limit must be constrained or terminated with a normalized outcome. Optional general disk/I/O controls are capability-reported; absence cannot be silently treated as enforcement. Independently of that optional capability, an untrusted writer driven to its allowed storage boundary must stop or be terminated before appliance reserve is breached, while PostgreSQL remains read/write and the control plane remains healthy and able to persist the normalized outcome. | Requested profile name, immutable capability snapshot, effective provider configuration, workload observation, normalized limit outcome, storage usage/reserve readings, PostgreSQL read/write probe, and control-plane health/persistence probe. |
 | `NFR-M1-005` | Paths are normalized and protected against traversal. | Run the shared hostile-path corpus at every public API and internal adapter accepting paths: absolute paths, `..`, repeated/mixed separators, empty/NUL-invalid segments, symlink/junction escape, replaced parent, case/normalization alias where applicable, and path changed between validation and use. Every path that resolves outside the allocated root must be rejected before mutation; containment is revalidated at use time. | Encoded and decoded input class, allocated root identity, resolved target or safe rejection reason, effect counter proving no mutation, and `PATH_ESCAPE`/validation result without leaking host paths. |
-| `NFR-M1-006` | Repositories much larger than one task's working set do not require complete contents in application memory. | The standard large-repository fixture contains at least 100,000 tracked paths and 10 GiB of Git objects, while the changed working set is at most 100 paths and all output caps are enabled. Status, bounded diff, and Workspace creation must stream/page metadata and never read complete repository file contents into the control-plane process. Peak control-plane RSS above its post-start idle baseline must be `<= 512 MiB`; response/blob bounds must hold. Git subprocess RSS is recorded separately and must fit the appliance budget selected in Issue #19. | Fixture manifest, process-separated RSS samples, response/blob byte counts, truncation/page markers, spans, and out-of-memory/timeout outcomes. |
+| `NFR-M1-006` | Repositories much larger than one task's working set do not require complete contents in application memory. | Use a reference fixture with at least 10,000 tracked paths and 1 GiB of Git objects and a large fixture with at least 100,000 tracked paths and 10 GiB, each with the same changed working set of at most 100 paths and all output caps enabled. Status, bounded diff, and Workspace creation must stream/page metadata and never read complete repository file contents into the control-plane process. For each operation, the large-fixture peak control-plane RSS delta above post-start idle must be no more than the corresponding reference-fixture delta plus `128 MiB`; every measured delta must also be `<= 512 MiB`. Response/blob bounds must hold. Git subprocess RSS is recorded separately and must fit the appliance budget selected in Issue #19. | Both fixture manifests, operation-by-operation process-separated RSS samples and deltas, response/blob byte counts, truncation/page markers, spans, and out-of-memory/timeout outcomes. |
 | `NFR-M1-007` | Destructive Git operations require explicit API intent and an audit entry. | Restore/revert, discard, and any operation classified destructive must require authenticated actor, explicit operation ID, expected Workspace revision, and explicit path/scope or whole-Workspace confirmation. Intent and required audit evidence are durable before dispatch. Missing/invalid intent or failed audit append yields no effect. Replay produces neither a duplicate effect nor misleading duplicate completion evidence. | Authorization decision, intent/audit/transition correlation, expected revision and scope, dispatch counter, before/after Git observation, and failure-injection result. |
 
 ### 3.1 Interpretation boundaries
 
-- `NFR-M1-001` uses p95 because the PRD states a performance **target**, not a hard
-  per-sample deadline. The maximum remains visible. Product Owner acceptance of this
+- `NFR-M1-001` translates the PRD's performance **target** into an explicit finite-sample
+  rule: no more than one of exactly 30 measured creates may exceed `15.0 s`. The reported
+  p95 remains diagnostic rather than defining pass/fail. Product Owner acceptance of this
   interpretation is required on the Issue #18 PR.
 - The reference appliance, exact tooling, and supported dependency versions are selected
   by Issue #19. That decision may make a fixture stricter but may not weaken the fixed
   `15 s`, containment, durability, or audit conditions above.
-- The `512 MiB` value in `NFR-M1-006` bounds incremental control-plane memory, not the
+- The comparative fixture condition in `NFR-M1-006` tests that control-plane memory does
+  not grow in proportion to repository size; its `128 MiB` additive tolerance permits
+  bounded metadata/index overhead. The `512 MiB` value remains a separate deployment
+  ceiling on incremental control-plane memory, not the
   PostgreSQL, Incus, page cache, or Git subprocess budget. Those measurements are still
   reported separately so moving memory outside the process cannot masquerade as an
   optimization.
@@ -127,8 +131,9 @@ repository remains unchanged. Only the assigned source projection and declared e
 paths are writable; hidden Git metadata is reported rather than fabricated.
 
 **Executable evidence:** browser/API/Incus E2E; `CONF-M1-013`–`025`, `030`, `032`,
-`034`–`036`; resource, mount, credential, path, timeout, cancellation, and output-bound
-security cases.
+`034`–`036`; resource, mount, credential, path, timeout, cancellation, output-bound, and
+storage-exhaustion cases. The storage case must retain PostgreSQL read/write availability
+and control-plane health through the normalized limit outcome.
 
 ### `AC-M1-04` — Report optional Incus kinds without weakening required health
 
@@ -168,8 +173,11 @@ absence are independently asserted.
 persisted-intent/effect boundary, **when** the control plane is terminated and restarted,
 **then** it reconstructs metadata from PostgreSQL and observes Git/Incus without changing
 a pinned base, retargeting a stale generation, or redispatching an ambiguous operation.
-Observable cases converge; unobservable cases remain explicitly blocking; foreign or
-unpublished orphan resources are not destructively guessed away.
+Within two completed cycles, observable intents reach either a justified terminal state
+or the correct stable evidence-waiting/quarantined classification with their next
+required observation. Evidence-gated reclamation continues for the full `M1-I22`
+grace/count; unobservable cases remain explicitly blocking, and foreign or unpublished
+orphan resources are not destructively guessed away.
 
 **Executable evidence:** failpoint matrix `NV-M1-03`; PostgreSQL restart integration;
 `CONF-M1-006`, `007`, `012`, `015`, `016`, `018`, `022`, `023`, `029`, `035`, `036`.
@@ -197,8 +205,10 @@ stale-revision injection.
 **when** the operator chooses preserve or archive and destroys the Sandbox, **then**
 provider compute is destroyed at most once while Workspace source follows the chosen
 retention action. Ambiguous, foreign, stale-generation, or unpublished orphan state is
-blocked/quarantined. The precise archive/retention duration and automatic-GC oracle must
-cite the ADR produced by Issue #21 before this case can pass Design Ready.
+blocked/quarantined. The archive/retention duration and automatic-GC oracle must cite the
+ADR produced by Issue #21, while referential survival for Command Runs, Test Runs, diffs,
+blob descriptors, and audit records must cite the persistence decision produced by Issue
+#26, before this case can pass Design Ready.
 
 **Executable evidence:** provider/Git/PostgreSQL E2E; `CONF-M1-012`, `015`, `016`,
 `018`; lost-response and unavailable-authority failure injection.
@@ -237,12 +247,12 @@ These protocol anchors tell engineering how to turn the catalogue into repeatabl
 
 | Case | Setup and perturbation | Required oracle | Primary evidence class |
 |---|---|---|---|
-| `NV-M1-01` | Warm-mirror creation fixture; 3 warm-ups plus 30 serial measurements | p95 `<= 15.0 s`, failures retained, measurement excludes fetch/sandbox | End-to-end/performance |
+| `NV-M1-01` | Warm-mirror creation fixture; 3 warm-ups plus exactly 30 serial measurements | At least 29 of 30 complete in `<= 15.0 s`; failures count as exceeding; measurement excludes fetch/sandbox | End-to-end/performance |
 | `NV-M1-02` | Replay and conflicting reuse of every mutating Git operation ID, including after restart | At most one effect; stable terminal result; typed conflict with no mutation | Unit, PostgreSQL, Git integration |
-| `NV-M1-03` | Kill at each persisted-intent/effect/observation/projection boundary | No canonical Git loss; observable convergence within two cycles; uncertainty stays blocked | PostgreSQL and failure injection |
-| `NV-M1-04` | Apply two profiles and exceed CPU, memory, and process limits | Effective values differ as declared; each enforced limit constrains the workload | Provider/security conformance |
+| `NV-M1-03` | Kill at each persisted-intent/effect/observation/projection boundary | No canonical Git loss; each observable intent reaches terminal or correct evidence-waiting classification within two cycles; evidence-gated reclamation keeps its full grace/count | PostgreSQL and failure injection |
+| `NV-M1-04` | Apply two profiles; exceed CPU, memory, process, and allowed task-storage boundaries | Effective values differ as declared; each enforced limit constrains the workload; storage exhaustion preserves PostgreSQL read/write and control-plane availability | Provider/security conformance |
 | `NV-M1-05` | Run hostile-path corpus plus validate/use replacement race at every path-bearing port | No escaped read/write/effect; stable safe error; no host-path leakage | Unit, contract, security conformance |
-| `NV-M1-06` | Run create/status/bounded-diff on the standard 100k-path/10-GiB fixture | Control-plane RSS delta `<= 512 MiB`; bounded output; process-separated metrics | Performance/integration |
+| `NV-M1-06` | Run create/status/bounded-diff on matched 10k-path/1-GiB and 100k-path/10-GiB fixtures | Per operation, large-fixture control-plane RSS delta `<=` reference delta + `128 MiB`; every delta `<= 512 MiB`; bounded output; process-separated metrics | Performance/integration |
 | `NV-M1-07` | Omit/alter intent fields, fail audit append, replay completed destructive intent | Rejected cases have zero effects; accepted case has correlated prior intent/audit and one effect | Authorization, PostgreSQL, failure injection |
 
 ## 7. Design Gate checklist and downstream handoff
@@ -250,7 +260,7 @@ These protocol anchors tell engineering how to turn the catalogue into repeatabl
 Issue #28 may mark MVP1 Design Ready only when:
 
 1. Issues #19–#27 are closed or their accepted outputs are present and linked.
-2. Product Owner has accepted the p95 interpretation for `NFR-M1-001`.
+2. Product Owner has accepted the explicit 29-of-30 interpretation for `NFR-M1-001`.
 3. Each row in §5 resolves to concrete schema/control/event/contract identifiers rather
    than only an issue number.
 4. Security maps every applicable `THR-M1-*` to at least one `SEC-M1-*` and an
