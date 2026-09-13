@@ -77,4 +77,10 @@ Allocated when a PRD §8 clause first needs to be cited by ID.
 
 | ID | PRD clause | Issue | Status |
 |---|---|---|---|
-| — | — | — | — |
+| `NFR-M1-001` | Warm-mirror workspace creation latency | #18 | Reserved |
+| `NFR-M1-002` | Idempotent Git transitions or recoverable conflicts | #18 | Reserved |
+| `NFR-M1-003` | Restart-safe workspace operations and canonical Git state | #18 | Reserved |
+| `NFR-M1-004` | Configurable sandbox resource limits | #18 | Reserved |
+| `NFR-M1-005` | Path normalization and traversal protection | #18 | Reserved |
+| `NFR-M1-006` | Memory-bounded operation on large repositories | #18 | Reserved |
+| `NFR-M1-007` | Explicit intent and audit for destructive Git operations | #18 | Reserved |
