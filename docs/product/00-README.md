@@ -28,6 +28,42 @@ This documentation bundle defines the full product vision and staged product req
 - `10-traceability-matrix.md` — roadmap and cross-MVP requirement traceability.
 - `remote-agent-identities-and-sdlc.md` — remote agent identities, brokered authentication, and human-like SDLC collaboration on Forgejo and GitHub.
 
+## Source of truth and generated bundle
+
+The split documents in this directory are the canonical product documentation. `COMPLETE-DOCUMENTATION.md` is a **generated bundle**: a concatenation of those documents produced and checked by `scripts/product_bundle.py`. It is **derived, not authoritative**. Where any other document cites the bundle, read the corresponding split document as the source of truth. Edit a split document, then regenerate the bundle; never edit the bundle by hand.
+
+The ordered list of sources that make up the bundle — including this file — is declared in the machine-readable block below. `scripts/product_bundle.py` reads it for both `build` and `verify`, so the declared list is the single authority for bundle membership and order.
+
+<!-- BUNDLE-SOURCES
+00-README.md
+01-product-vision.md
+02-prd-mvp1-git-foundation.md
+03-prd-mvp2-agent-runtime-fabric.md
+04-prd-mvp3-orchestration-groups.md
+05-prd-mvp4-review-quality-publish.md
+06-prd-mvp5-repository-intelligence.md
+07-prd-mvp6-context-intelligence.md
+08-prd-mvp7-integrations-inference.md
+09-prd-mvp8-governance-scale.md
+10-traceability-matrix.md
+remote-agent-identities-and-sdlc.md
+-->
+
+Rebuild the bundle after editing any split document, and verify it before committing:
+
+```sh
+python scripts/product_bundle.py build
+python scripts/product_bundle.py verify
+```
+
+Both commands check the declaration before reading or writing anything. Every `*.md` directly under `docs/product` — except the generated bundle itself — must be declared; names must be plain filenames (no absolute, traversal, or separator-bearing paths), and the bundle may not declare itself. `verify` exits non-zero if a product document is present but undeclared, if a declared source is absent from the bundle, if the bundle contains a section with no declared source, or if any embedded section differs from its canonical file.
+
+The regression tests cover unsafe declarations, an undeclared product document, and content drift:
+
+```sh
+python scripts/test_product_bundle.py
+```
+
 ## Intended downstream consumers
 
 Every PRD is structured for four specialist agent groups:

@@ -13,6 +13,8 @@ dist/
 build/
 coverage/
 *.log
+__pycache__/
+*.py[cod]
 
 # Local handoff notes for the human operator; not part of the repository.
 .handoff/

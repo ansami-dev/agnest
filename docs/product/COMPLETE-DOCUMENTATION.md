@@ -33,6 +33,43 @@ This documentation bundle defines the full product vision and staged product req
 - `08-prd-mvp7-integrations-inference.md` — Forgejo/GitHub, MCP/tool integrations, inference gateway abstraction, 9Router/LiteLLM/direct providers/local models.
 - `09-prd-mvp8-governance-scale.md` — RBAC, policy, secrets, audit, multi-project/multi-user scale, resilience, compliance, enterprise controls.
 - `10-traceability-matrix.md` — roadmap and cross-MVP requirement traceability.
+- `remote-agent-identities-and-sdlc.md` — remote agent identities, brokered authentication, and human-like SDLC collaboration on Forgejo and GitHub.
+
+## Source of truth and generated bundle
+
+The split documents in this directory are the canonical product documentation. `COMPLETE-DOCUMENTATION.md` is a **generated bundle**: a concatenation of those documents produced and checked by `scripts/product_bundle.py`. It is **derived, not authoritative**. Where any other document cites the bundle, read the corresponding split document as the source of truth. Edit a split document, then regenerate the bundle; never edit the bundle by hand.
+
+The ordered list of sources that make up the bundle — including this file — is declared in the machine-readable block below. `scripts/product_bundle.py` reads it for both `build` and `verify`, so the declared list is the single authority for bundle membership and order.
+
+<!-- BUNDLE-SOURCES
+00-README.md
+01-product-vision.md
+02-prd-mvp1-git-foundation.md
+03-prd-mvp2-agent-runtime-fabric.md
+04-prd-mvp3-orchestration-groups.md
+05-prd-mvp4-review-quality-publish.md
+06-prd-mvp5-repository-intelligence.md
+07-prd-mvp6-context-intelligence.md
+08-prd-mvp7-integrations-inference.md
+09-prd-mvp8-governance-scale.md
+10-traceability-matrix.md
+remote-agent-identities-and-sdlc.md
+-->
+
+Rebuild the bundle after editing any split document, and verify it before committing:
+
+```sh
+python scripts/product_bundle.py build
+python scripts/product_bundle.py verify
+```
+
+Both commands check the declaration before reading or writing anything. Every `*.md` directly under `docs/product` — except the generated bundle itself — must be declared; names must be plain filenames (no absolute, traversal, or separator-bearing paths), and the bundle may not declare itself. `verify` exits non-zero if a product document is present but undeclared, if a declared source is absent from the bundle, if the bundle contains a section with no declared source, or if any embedded section differs from its canonical file.
+
+The regression tests cover unsafe declarations, an undeclared product document, and content drift:
+
+```sh
+python scripts/test_product_bundle.py
+```
 
 ## Intended downstream consumers
 
@@ -371,7 +408,7 @@ An executable unit of work assigned to an agent or group. A task has lifecycle, 
 
 ### Agent
 
-Persistent identity independent from runtime. Stores role, capabilities, permissions, policy, history references, and group memberships.
+Persistent identity independent from runtime. Stores role, capabilities, permissions, policy, history references, group memberships, and external identity bindings (e.g. Forgejo user account or GitHub App bot persona).
 
 ### Runtime Binding
 
@@ -408,7 +445,7 @@ Human or policy gate for sensitive transitions such as commit, publish, PR, secr
 1. User connects Forgejo/GitHub repository.
 2. Control plane maintains or updates a local repository mirror.
 3. Issue is imported or selected.
-4. User or workflow assigns issue to an agent/group.
+4. User or workflow assigns issue to an agent/group, and remote issue assignee is updated to reflect the agent's remote persona.
 5. Control plane creates branch + worktree + workspace.
 6. Sandbox provider provisions a local Incus instance in MVP1 and attaches the workspace; later providers remain behind the same product boundary.
 7. Repository intelligence retrieves likely relevant code, tests, specs, and history.
@@ -421,8 +458,8 @@ Human or policy gate for sensitive transitions such as commit, publish, PR, secr
 14. Implementer revises until quality gates pass.
 15. Human inspects actual source diff in the product UI.
 16. User approves commit and/or publish according to policy.
-17. Git service commits/pushes using control-plane authority.
-18. PR is created in Forgejo/GitHub.
+17. Git service commits/pushes using control-plane authority with author attribution to the implementer agent.
+18. PR is created in Forgejo/GitHub authored by the implementer agent; specialist reviewer agents are assigned, posting native PR reviews and inline comments.
 19. CI status is tracked and correlated to the task/workspace.
 20. Workflow completes, workspace is retained or destroyed according to policy, and all actions remain auditable.
 
@@ -1048,6 +1085,7 @@ A later task runs `Hephaestus` through a different harness while preserving agen
 - **FR-M2-016 Identity portability:** changing runtime must not create a new Agent record.
 - **FR-M2-017 Model metadata:** record actual model/provider used when knowable without hard-coding product logic to it.
 - **FR-M2-018 Runtime environment requirements:** adapter declares required binaries, env vars, filesystem paths, and network access.
+- **FR-M2-019 External identity binding:** bind persistent agent identity to provider-specific remote persona (Forgejo user account, GitHub App bot) and secret references.
 
 ## 8. Non-Functional Requirements
 
@@ -1061,7 +1099,7 @@ A later task runs `Hephaestus` through a different harness while preserving agen
 
 ## 9. Domain Entities and Data Considerations
 
-Entities: `Agent`, `AgentRole`, `Capability`, `RuntimeAdapterType`, `RuntimeBinding`, `RuntimeSession`, `RuntimeCapabilitySnapshot`, `AgentExecution`, `RuntimeEvent`, `ArtifactReference`, `ModelExecutionMetadata`.
+Entities: `Agent`, `AgentRole`, `Capability`, `RuntimeAdapterType`, `RuntimeBinding`, `RuntimeSession`, `RuntimeCapabilitySnapshot`, `AgentExecution`, `RuntimeEvent`, `ArtifactReference`, `ModelExecutionMetadata`, `ExternalAgentIdentity`.
 
 Agent identity is long-lived. RuntimeBinding is task/session scoped. RuntimeSession may be resumable but must not become the durable source of task state. Store adapter version and capability snapshot for reproducibility.
 
@@ -1223,6 +1261,8 @@ Control plane restarts mid-workflow; tasks/events/artifacts reconstruct current 
 - **FR-M3-018 Activity timeline:** reconstruct significant state from events/artifacts rather than raw transcript.
 - **FR-M3-019 Manual override:** pause, resume, skip with reason, reassign, cancel.
 - **FR-M3-020 Concurrency control:** prevent duplicate execution of same exclusive task stage.
+- **FR-M3-021 Bi-directional deliberation synchronization:** project deliberation group round positions to remote issue comments, and ingest authorized human comments from remote Git hosts as priority human instructions into the next round context pack.
+
 
 ## 8. Non-Functional Requirements
 
@@ -1382,9 +1422,9 @@ Remote CI result is linked back to task/workspace. Failed CI may reopen workflow
 - **FR-M4-007 Quality gate:** evaluate tests, review verdicts, unresolved findings, required approvals.
 - **FR-M4-008 Local commit:** commit selected staged changes with controlled author/committer metadata policy.
 - **FR-M4-009 Commit approval:** optional/required approval independent from publish.
-- **FR-M4-010 Publish action:** push selected local branch through control-plane Git integration.
+- **FR-M4-010 Publish action:** push selected local branch through control-plane Git integration with implementer agent identity attribution.
 - **FR-M4-011 Remote branch collision handling:** detect divergence/name collision/non-fast-forward and require resolution.
-- **FR-M4-012 PR creation:** create Forgejo/GitHub pull request with generated/user-edited title/body and issue linkage.
+- **FR-M4-012 PR creation:** create Forgejo/GitHub pull request authored by implementer agent's remote persona with generated/user-edited title/body, issue linkage, and automated reviewer assignment.
 - **FR-M4-013 Remote state:** track unpublished, published, PR open, updated after publish, remote behind/ahead.
 - **FR-M4-014 CI status ingestion:** correlate checks/statuses to commit/PR.
 - **FR-M4-015 Post-publish update:** allow additional local commits and republish with explicit action.
@@ -1393,6 +1433,8 @@ Remote CI result is linked back to task/workspace. Failed CI may reopen workflow
 - **FR-M4-018 Human override:** accept risk/waive finding only with permission and reason.
 - **FR-M4-019 Diff size safeguards:** large/binary/generated-file handling and review warnings.
 - **FR-M4-020 PR artifact:** persist remote URL/ID/status and relation to local task/workspace.
+- **FR-M4-021 Remote review projection:** project internal ReviewFinding and review runs to native Forgejo/GitHub PR reviews with file/line inline comments and formal verdicts (`APPROVE`, `REQUEST_CHANGES`) as an asynchronous display projection, while internal review rework loops consume structured A2A ReviewFinding artifacts to preserve context efficiency.
+- **FR-M4-022 Remote issue synchronization:** synchronize task status and assignee to remote Forgejo/GitHub issue.
 
 ## 8. Non-Functional Requirements
 
@@ -1404,7 +1446,7 @@ Remote CI result is linked back to task/workspace. Failed CI may reopen workflow
 
 ## 9. Domain Entities and Data Considerations
 
-Entities: `ReviewRun`, `ReviewFinding`, `ReviewAnchor`, `QualityGate`, `QualityGateEvaluation`, `CommitIntent`, `CommitRecord`, `PublishRequest`, `PublishResult`, `RemoteBranchState`, `PullRequest`, `CIStatus`, `RiskAcceptance`.
+Entities: `ReviewRun`, `ReviewFinding`, `ReviewAnchor`, `QualityGate`, `QualityGateEvaluation`, `CommitIntent`, `CommitRecord`, `PublishRequest`, `PublishResult`, `RemoteBranchState`, `PullRequest`, `CIStatus`, `RiskAcceptance`, `RemoteReviewVerdict`.
 
 Store both local and remote commit SHA. Findings reference workspace revision/diff hash. Quality-gate evaluations are versioned snapshots, not a mutable single boolean.
 
@@ -1894,7 +1936,7 @@ User changes inference backend from direct provider to 9Router/LiteLLM without c
 
 ## 7. Functional Requirements
 
-- **FR-M7-001 GitProvider interface:** repo metadata, issue/PR, branch, status/checks, webhooks, comments as supported.
+- **FR-M7-001 GitProvider interface:** repo metadata, issue/PR, branch, status/checks, webhooks, comments, multi-user agent identity routing, and PR review submissions as supported.
 - **FR-M7-002 Forgejo provider:** complete targeted provider implementation.
 - **FR-M7-003 GitHub provider:** complete targeted provider implementation.
 - **FR-M7-004 MCP Server registry:** register endpoint/transport, capabilities, credentials, health, allowed roles/projects.
@@ -1914,6 +1956,7 @@ User changes inference backend from direct provider to 9Router/LiteLLM without c
 - **FR-M7-018 Capability negotiation:** model/tool/provider requirements validated before task starts.
 - **FR-M7-019 Integration health dashboard:** status/version/last error/credential expiry where available.
 - **FR-M7-020 Webhook event normalization:** external provider events map to typed internal events.
+- **FR-M7-021 Brokered agent identity provider:** execute remote repository operations on behalf of specific agent identities while keeping credential custody centralized in control plane.
 
 ## 8. Non-Functional Requirements
 
@@ -2328,3 +2371,228 @@ From MVP5 onward, maintain a repeatable benchmark repository/issue set measuring
 - latency and cost.
 
 No token-saving feature should be promoted solely on lower token count if engineering quality materially regresses.
+
+---
+
+<!-- SOURCE: remote-agent-identities-and-sdlc.md -->
+
+# Remote Agent Identities, Authentication, and Human-Like SDLC Collaboration
+
+**Status:** Proposed
+**Owner:** Product / Integration
+**Applies to:** Forgejo and GitHub integrations across MVP2, MVP3, MVP4, and MVP7
+**Traceability:** `FR-M2-001`, `FR-M2-005`, `FR-M3-008`, `FR-M3-009`, `FR-M3-011`, `FR-M3-012`, `FR-M3-014`, `FR-M4-004`, `FR-M4-006`, `FR-M4-007`, `FR-M4-010`, `FR-M4-012`, `FR-M7-001`, `FR-M7-002`, `FR-M7-003`, `FR-M8-007`, `FR-M8-021`, `ADR-0003`
+
+---
+
+## 1. Executive Summary & Vision
+
+Agnest is designed to operate heterogeneous AI coding agents as a coordinated engineering organization. While Agnest is local-first, software development remains inherently collaborative. In real-world engineering teams, collaboration happens on remote Git hosts (Forgejo and GitHub).
+
+This specification introduces the **Brokered Remote Agent Identity** model. Instead of hiding multi-agent workflows behind an anonymous single system bot, each specialist agent operates as a first-class engineering team member with a recognized identity in the remote repository:
+- Issues are assigned to specific agents (e.g. `@agnest-implementer`).
+- Branches and Pull Requests are published with explicit author attribution to the implementer agent.
+- Specialist agents (`@agnest-qa`, `@agnest-codereview`, `@agnest-security`) conduct native PR reviews, post file/hunk inline comments, and submit formal verdicts (`APPROVE` or `REQUEST_CHANGES`).
+- The entire Software Development Life Cycle (SDLC) is transparently observable to human engineers on Forgejo/GitHub, just like collaboration among human engineers.
+- **Critical Security Invariant:** Task sandboxes remain air-gapped from remote write credentials (**Principle P9: Local-First, Remote-by-Approval**). Remote API interactions are strictly brokered by the Agnest Control Plane.
+
+---
+
+## 2. The Brokered Remote Identity Pattern
+
+### 2.1 Core Architectural Separation
+
+```text
++-----------------------------------------------------------------------------------------+
+| REMOTE COLLABORATION HOST (Forgejo / GitHub)                                            |
+|                                                                                         |
+|   Issue #42   --> Assignee: @agnest-implementer                                         |
+|   PR #10      --> Author:   @agnest-implementer                                         |
+|                   Reviewer: @agnest-qa          [APPROVE]                               |
+|                   Reviewer: @agnest-codereview  [CHANGES_REQUESTED: inline comments]    |
+|                   Reviewer: @agnest-security    [APPROVE]                               |
++-----------------------------------------------------------------------------------------+
+                                         ▲
+                         Brokered Provider API Calls
+                         (Assign, Push, PR, Review, Comment)
+                                         │
++----------------------------------------┴------------------------------------------------+
+| AGNEST CONTROL PLANE                                                                    |
+|                                                                                         |
+|   +---------------------------------------------------------------------------------+   |
+|   | Remote Identity & Credential Broker                                             |   |
+|   |   - Agent "Hephaestus" -> Remote: @agnest-implementer (Token Ref: SEC-FJO-IMP)  |   |
+|   |   - Agent "Argus"      -> Remote: @agnest-qa          (Token Ref: SEC-FJO-QA)   |   |
+|   |   - Agent "Athena"     -> Remote: @agnest-codereview  (Token Ref: SEC-FJO-CR)   |   |
+|   |   - Agent "Sentry"     -> Remote: @agnest-security    (Token Ref: SEC-FJO-SEC)  |   |
+|   +---------------------------------------------------------------------------------+   |
+|                                         ▲                                               |
+|                    Emits Typed Artifacts, Diffs, Findings                               |
+|                                         │                                               |
+|   +-------------------------------------┴-------------------------------------------+   |
+|   | LOCAL TASK SANDBOXES (Incus)                                                    |   |
+|   |   - Sandbox Hephaestus: Modifies local worktree & runs tests                    |   |
+|   |   - ZERO remote Git credentials inside sandbox filesystem or environment        |   |
+|   +---------------------------------------------------------------------------------+   |
++-----------------------------------------------------------------------------------------+
+```
+
+### 2.2 Security Invariants
+1. **Zero Remote Write Credentials in Sandboxes (`FR-M1-017`, `ADR-0003`):** No Personal Access Token (PAT), SSH private key with write access, or OAuth token ever enters the task sandbox filesystem or environment. Direct `git push` inside the sandbox fails by default.
+2. **Centralized Credential Custody:** Tokens corresponding to agent remote accounts are stored in the Control Plane Secret Store (`FR-M8-007`).
+3. **Brokered Execution:** When an agent produces an artifact (e.g. `ReviewFinding`, `PublishRequest`), the Control Plane verifies the quality gate / human approval, binds the action to that agent's `ExternalAgentIdentity`, and calls the remote Forgejo/GitHub API using the agent's brokered credentials.
+
+### 2.3 Dual-Layer Architecture: Execution Bus (A2A) vs Display Projection (Remote Git)
+
+A fundamental architectural principle governs all multi-agent interactions across both Workflow and Deliberation modes:
+
+1. **Internal Execution Bus (100% A2A & Typed Artifacts):**
+   - Agents communicate internally exclusively through **Agent2Agent (A2A)** semantics and typed structured artifacts (`ReviewFinding`, `ImplementationSummary`, `TestRun`, `Finding`).
+   - **Context Efficiency Guarantee (Principle P7):** Agents **never** scrape, fetch, or parse raw HTML/markdown comment threads from Forgejo/GitHub. Scraping remote threads would cause severe token bloat, parsing errors, hallucination, and prompt injection vulnerabilities.
+   - In rework loops (`FR-M3-014`), the Implementer Agent receives concise, structured `ReviewFinding` references within its role-tailored Context Pack (~50 tokens), avoiding thousands of wasted tokens on conversational overhead.
+2. **External Display Projection (Asynchronous Remote Git Sync):**
+   - Comments on PRs (inline hunk reviews) and Issues (round positions) are **asynchronous display projections** created by the Control Plane via provider REST APIs.
+   - Generating these remote comments costs **$0 and 0 additional LLM tokens**; it is pure backend API orchestration.
+   - This provides complete human-in-the-loop transparency on Forgejo/GitHub while preserving maximum context economics and speed in the agent runtime.
+
+---
+
+## 3. Remote Host Implementations
+
+### 3.1 Forgejo Implementation (Dedicated Machine Users)
+In Forgejo instances:
+- Dedicated user accounts are provisioned for standard engineering roles:
+  - `@agnest-architect`
+  - `@agnest-implementer`
+  - `@agnest-qa`
+  - `@agnest-codereview`
+  - `@agnest-security`
+- Accounts belong to the repository organization with tailored role permissions:
+  - Implementer: *Write* (create branches, open PRs).
+  - Reviewers: *Triage / Write* (post comments, submit PR reviews).
+- Authentication: Scoped Personal Access Tokens (PATs) or OAuth Application credentials bound to normalized canonical origins (`scheme, host, effective port`).
+
+### 3.2 GitHub Implementation (GitHub Apps & Machine Users)
+In GitHub repositories:
+- **GitHub Apps (Recommended):** An Agnest GitHub App installation with bot slugs (e.g. `agnest-implementer[bot]`, `agnest-reviewer[bot]`). This provides fine-grained repository permissions, webhook signature validation, and compliant attribution without violating user seat policies.
+- **Machine Users (Alternative):** Dedicated GitHub user accounts registered with collaborator permissions where enterprise policy permits.
+
+---
+
+## 4. End-to-End Human-Like SDLC Workflow
+
+### 4.1 Workflow Mode (Feature Delivery & Bug Fixing)
+
+```text
+[Human Owner] creates Issue #42: "Fix login session timeout"
+     │
+     ▼
+[Control Plane] imports Issue, creates Task TSK-0142
+     │
+     ▼ (Forgejo API call)
+[Remote Issue #42] Assignee updated to @agnest-implementer; label 'status: in-progress'
+     │
+     ▼
+[Implementer Agent] works in local Incus sandbox -> runs tests -> passes local suite
+     │
+     ▼ (Human / Policy Approval Gate)
+[Control Plane] executes Publish via @agnest-implementer credential:
+     ├─ Pushes branch 'fix/login-session-timeout'
+     └─ Opens PR #10 (Author: @agnest-implementer, "Fixes #42")
+     │
+     ▼
+[Control Plane] Requests Reviewers on PR #10:
+     ├─ @agnest-qa
+     ├─ @agnest-codereview
+     └─ @agnest-security
+     │
+     ▼
+[Specialist Multi-Agent Reviews]:
+     ├─ @agnest-qa runs test matrix -> submits PR Review: APPROVE ("Test suite passed, 0 regressions")
+     ├─ @agnest-codereview inspects diff -> submits PR Review: REQUEST_CHANGES
+     │    └─ Inline comment on auth/session.go:L45: "Sanitize token before caching"
+     └─ @agnest-security inspects threat model -> submits PR Review: APPROVE
+     │
+     ▼ (Rework Loop: FR-M3-014)
+[Implementer Agent] receives review findings in local workspace -> amends code -> passes tests
+     │
+     ▼
+[Control Plane] pushes revised commit -> requests re-review
+     │
+     ▼
+[@agnest-codereview] verifies fix -> updates verdict to APPROVE
+     │
+     ▼ (Quality Gate Passed: FR-M4-007)
+[Human Owner] inspects clean PR #10 with all reviews passing -> clicks MERGE
+```
+
+### 4.2 Deliberation Mode (Architecture & Design Discussions)
+When multi-agent reasoning is required before implementation:
+1. **Remote RFC Issue:** An issue tagged `deliberation` or `design` is created on Forgejo/GitHub (e.g. Issue #50: *"RFC: Database choice for telemetry cache"*).
+2. **Round-Based Positions:** Specialist agents are mentioned (`@agnest-architect`, `@agnest-security`, `@agnest-datadesign`).
+3. **Structured Contributions:** In Round 1, each agent posts an independent position comment analyzing trade-offs, constraints, and risks.
+4. **Anti-Spam & Silence Guardrails (`FR-M3-012`):** Agents without novel input produce no comments ("silence is valid"). Chatty conversational pleasantries are prohibited.
+5. **Coordinator Synthesis & ADR PR (`FR-M3-008`):** The nominated coordinator summarizes consensus and unresolved trade-offs, then publishes a single ADR Pull Request.
+
+### 4.3 Bi-Directional Human Interaction: Remote Issue Comments vs Agnest Dashboard
+
+Agnest supports flexible, bi-directionally synchronized interaction for human engineers and Product Owners:
+
+1. **Interacting via Remote Issue Comments (Forgejo / GitHub):**
+   - Human leads can participate by commenting directly in the Forgejo/GitHub Issue or PR thread.
+   - External Webhook integration (`FR-M7-020`) validates the commenter identity and privileges (`author_association: OWNER | MEMBER`).
+   - The comment is ingested, normalized, and injected directly into the next deliberation or review round as a high-priority `HumanInstruction` within the agent Context Pack.
+   - Allows seamless participation from mobile devices or standard Git web interfaces without opening the Agnest dashboard.
+2. **Interacting via Agnest Dashboard UI (Experience Layer / Deliberation View):**
+   - Human leads can monitor deliberation or workflow progress in real-time within the Agnest desktop/web dashboard (`FR-M3-018`).
+   - Provides live token telemetry, per-agent cost breakdown, and rapid operational controls: **Pause**, **Resume**, **Force Finalize ADR**, or **Override**.
+   - Input entered in the Agnest dashboard is automatically synchronized and posted to the remote Forgejo Issue thread by the Control Plane to maintain complete historical transparency on Git.
+
+---
+
+## 5. Domain Entities & Data Model Extensions
+
+### 5.1 `ENT-ExternalAgentIdentity` (MVP2)
+Maps an internal `Agent` (`ENT-Agent`) to a remote Git provider persona:
+- `id`: UUID (canonical Agnest ID)
+- `agent_id`: Reference to `ENT-Agent`
+- `provider_type`: `FORGEJO` | `GITHUB`
+- `remote_username`: e.g. `agnest-implementer`
+- `remote_email`: e.g. `agnest-implementer@agnest.local`
+- `credential_ref`: Reference to `ENT-IntegrationCredentialRef` (stored in Secret Broker)
+- `display_title`: e.g. "Agnest Software Implementer"
+- `status`: `ACTIVE` | `SUSPENDED` | `REVOKED`
+
+### 5.2 `ENT-RemoteReviewVerdict` (MVP4)
+Represents a specialist agent's review submission projected to a remote PR:
+- `id`: UUID
+- `review_run_id`: Reference to `ENT-ReviewRun`
+- `pull_request_id`: Reference to `ENT-PullRequest`
+- `reviewer_identity_id`: Reference to `ENT-ExternalAgentIdentity`
+- `verdict`: `APPROVE` | `REQUEST_CHANGES` | `COMMENT`
+- `summary_body`: Markdown summary of findings
+- `inline_comments`: Array of `{ path, line, side, body, finding_ref }`
+- `remote_review_id`: External ID returned by Forgejo/GitHub API
+- `submitted_at`: Timestamp
+
+---
+
+## 6. Functional Requirements Matrix
+
+| ID | Requirement | Description | Target MVP |
+|---|---|---|---|
+| `FR-M2-019` | **External Identity Binding** | Agents can be bound to external provider identities (`ENT-ExternalAgentIdentity`) with secure credential references. | MVP2 |
+| `FR-M4-021` | **Remote Review Projection** | Internal `ReviewFinding` and `ReviewRun` verdicts project to native Forgejo/GitHub PR reviews with file/line inline comments and formal verdicts. | MVP4 |
+| `FR-M4-022` | **Agent PR Attribution** | Published branches and Pull Requests reflect the task's assigned agent remote identity as author. | MVP4 |
+| `FR-M7-021` | **Multi-Identity Git Provider** | `GitProvider` interface supports executing API operations on behalf of specific agent identities while maintaining broker-managed credential isolation. | MVP7 |
+
+---
+
+## 7. Operational & Security Governance
+
+1. **Least-Privilege Scoping:** Each agent token is scoped strictly to its function (e.g. Security reviewer account cannot push code to protected branches).
+2. **Auditability & Provenance:** Every remote API interaction records:
+   - Requesting agent ID and runtime model.
+   - Associated Agnest task ID and workspace commit SHA.
+   - Remote response ID and HTTP status.
+3. **Rate Limiting & Anti-Loop Safeguards:** Control plane throttles remote comment frequency and terminates repetitive review loops if agents fail to converge within configured budgets (`FR-M3-016`).

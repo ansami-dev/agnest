@@ -2,7 +2,9 @@
 
 **Status:** Proposed — becomes binding when the bootstrap PR is merged.
 **Owner:** Data Design. Amendments by PR; any role may propose one.
-**Source:** `docs/product/COMPLETE-DOCUMENTATION.md` §8 and each PRD §9.
+**Source:** `docs/product/01-product-vision.md` §8 and each PRD §9.
+`docs/product/COMPLETE-DOCUMENTATION.md` is a generated, non-authoritative bundle of
+those split documents.
 
 ---
 
