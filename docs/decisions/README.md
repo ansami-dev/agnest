@@ -47,3 +47,4 @@ question is on the record, and that the ADR cannot arrive without one.
 |---|---|---|---|
 | [ADR-0003](ADR-0003-mvp1-component-authority-boundaries.md) | Enforce three authority boundaries around the MVP1 modular control plane | Accepted | MVP1 |
 | [ADR-0011](ADR-0011-local-incus-provider-for-mvp1.md) | Use local Incus as the sole MVP1 sandbox provider | Accepted | MVP1 |
+| [ADR-0013](ADR-0013-product-wide-technology-architecture.md) | Govern implementation with an evolvable product-wide technology architecture | Accepted | MVP1–MVP8 |

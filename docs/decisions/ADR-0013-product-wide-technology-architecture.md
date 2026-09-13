@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | Proposed |
+| **Status** | Accepted |
 | **Date** | 2026-09-13 |
 | **MVP** | M0 — cross-cutting foundation for MVP1–MVP8 |
 | **Coordinator** | Architecture (Codex) |
