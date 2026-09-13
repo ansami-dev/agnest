@@ -148,8 +148,9 @@ claims, repository paths, Incus names, and filesystem locators never establish i
 Deployment-global records are explicit rather than represented by an absent tenant. A
 physical schema uses an ownership discriminator equivalent to `TENANT | GLOBAL`, with a
 tenant identifier required exactly for `TENANT`; it does not put a `GLOBAL` sentinel into
-a tenant UUID. Even while MVP1 has one tenant, this rule applies to newly introduced
-tenant-owned data and derived keys.
+a tenant UUID. Even while MVP1 has one tenant, this rule applies to all tenant-owned data
+and derived keys from the first MVP1 schema onward, without exception or grandfathered
+core records.
 
 ### 7. Content-address immutable blobs behind a storage port
 
@@ -202,7 +203,10 @@ out-of-process under its own identity and declared capabilities.
 The plugin host supplies only scoped, short-lived access with deadlines, cancellation,
 quotas, health, audit identity, and explicit network/filesystem/tool policy. Plugins never
 inherit database access, Incus authority, Git credentials, model credentials, or the
-control plane's ambient filesystem.
+control plane's ambient filesystem or blob-store access. A plugin receives blob content
+only through a scoped reference that the host resolves and authorizes for the current
+actor, tenant, task, and operation; the plugin cannot dereference arbitrary content
+references itself.
 
 Moving an adapter out-of-process is triggered by third-party code, an independent release
 cadence, a justified second language, material dependency conflict, privilege separation,
@@ -259,15 +263,19 @@ upgrade is a visible recoverable state, not an inference from unrelated logs.
 ### 14. Make audit claims no stronger than their verifier
 
 Agnest 1.0 makes no tamper-evidence claim and creates no hash chain. Audit provides
-durable ordered evidence plus detection of application defects, partial writes, restore
-mistakes, and accidental deletion. Anyone with database write authority, including the
-appliance owner, is outside that assurance.
+durable ordered evidence and supports detection or diagnosis of application-level
+consistency defects, partial or failed writes, and restore validation failures. It does
+not claim to detect deletion or rollback to a self-consistent prior snapshot. Anyone with
+database write authority, including the appliance owner, is outside that assurance.
 
-Audit records have immutable identity, ownership scope, monotonic sequence within their
-scope, actor, action, target, outcome, policy/approval evidence, timestamp,
+Audit records have immutable identity, ownership scope, a strictly increasing
+per-deployment sequence with gaps permitted, actor, action, target, outcome,
+policy/approval evidence, timestamp,
 correlation/causation, schema version, and deterministic versioned canonical
-serialization. When a protected action requires audit, failure to append it in the same
-durability boundary prevents the action from being considered complete.
+serialization. When a protected action requires audit, an append failure means the action
+is not recorded as complete. If an external effect may already have occurred, its intent
+enters the unknown-outcome path for observation and reconciliation; the system never
+pretends the effect was prevented or rolls it back without evidence.
 
 Any future cryptographic commitment must identify its threat actor, verifier, trusted
 checkpoint or external anchor, canonical encoding, algorithm agility, chain scope,
@@ -431,8 +439,10 @@ deliberately deferred decisions with triggers, not surviving disagreements.
   explicit encryption scheme, and backend-independent metadata references.
 - Event conformance proves CloudEvents mappings, extension-name constraints, untrusted
   inbound tenant handling, and rejection of unordered imports as replay authorities.
-- Audit tests prove append/order/durability and failure blocking where required; product
-  and operational docs contain no MVP1/1.0 tamper-evidence claim.
+- Audit tests prove append/order/durability, gaps-permitted sequence semantics, and the
+  unknown-outcome path when a required append fails after a possible external effect;
+  product and operational docs claim neither deletion detection nor MVP1/1.0 tamper
+  evidence.
 - Plugin and adapter tests prove serialization, capability negotiation, least authority,
   cancellation, resource bounds, normalized failures, and out-of-process third-party
   isolation.
