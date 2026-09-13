@@ -135,6 +135,17 @@ governed product action that happens to use it.
 Principle P8. A derived store may accelerate investigation; it may never silently
 replace reading the canonical source.
 
+### Content Reference vs Storage Location
+
+| | |
+|---|---|
+| **Content Reference** | Stable identity of immutable bytes: a versioned hash algorithm plus digest. It survives a storage migration. |
+| **Storage Location** | Replaceable locator used by a blob backend to retrieve those bytes. It is metadata, not artifact identity. |
+
+An encryptable content reference also carries an **Encryption Descriptor**: a versioned
+declaration of encryption scheme (`none` explicitly when unencrypted) and, when needed,
+opaque key-scope/reference and encrypted data-key metadata. It never embeds a master key.
+
 ---
 
 ## 2. Project and repository
@@ -185,6 +196,8 @@ replace reading the canonical source.
 | **Risk Acceptance** | MVP4 | A recorded, privileged waiver of a finding, with actor and reason. |
 | **Display Projection** | MVP4 | The asynchronous rendering of internal typed artifacts (such as `ReviewFinding` inline comments or deliberation round positions) onto external Git hosts (Forgejo/GitHub) at zero additional LLM token cost. |
 | **Bi-Directional Deliberation Sync** | MVP3 | Mutual synchronization between internal Agnest deliberation events and remote Git issue comments, where human comments ingest as priority context instructions. |
+| **Transactional Outbox** | MVP1 | Durable dispatch records written atomically with the state transition that caused them, then delivered idempotently. A later message broker may accelerate delivery but does not replace this record. |
+| **Upgrade Operation** | MVP1 | One durable, auditable plan and outcome composed of ordered, idempotent, retryable migration, deployment, compatibility, backfill, and capability-refresh steps. It is not an assumption that all changes occur simultaneously. |
 
 
 ## 5. Intelligence and context
@@ -213,6 +226,7 @@ replace reading the canonical source.
 | **Model Descriptor** | MVP7 | Provider plus canonical provider model ID. **Routing aliases are policy objects, not model identity.** |
 | **Inference Route / Attempt** | MVP7 | The resolved path for a model call, and each individual try including fallbacks. |
 | **Provider Trust Tier** | MVP7 | A classification governing what task context a provider may receive, and whether fallback to it is permitted. |
+| **Compatibility Policy** | MVP1 | Shared governance requiring owned contracts, additive-first changes, no silent reinterpretation, declared support windows, conformance evidence, and migration records, with evolution mechanics defined separately for HTTP APIs, RPC, events, capabilities, database schemas, and plugins. |
 
 ## 7. Security and governance
 
@@ -224,6 +238,7 @@ replace reading the canonical source.
 | **Secret Lease** | MVP8 | A scoped, short-lived grant of an actual secret value, with expiry and revocation. |
 | **Policy Decision** | MVP8 | A versioned, explainable allow/deny outcome, referenced by the protected action it governed. |
 | **Tenant** | MVP8 | The ownership scope — Organization, Team, Project — that must be explicit in all primary data **and in every index**, not only in API records. |
+| **Ownership Scope** | MVP1 | Explicit classification of a record or message as tenant-owned or deployment-global. Tenant-owned data carries a tenant identifier derived from authenticated authority; global scope is explicit and is never inferred from null, payload claims, paths, or provider locators. |
 | **Separation of Duties** | MVP8 | The requirement that the actor who requests a protected action is not the actor who approves it. |
 | **Break-glass** | MVP8 | Emergency elevated access, permitted but subject to enhanced audit. |
 
