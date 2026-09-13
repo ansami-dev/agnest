@@ -67,6 +67,7 @@ A later task runs `Hephaestus` through a different harness while preserving agen
 - **FR-M2-016 Identity portability:** changing runtime must not create a new Agent record.
 - **FR-M2-017 Model metadata:** record actual model/provider used when knowable without hard-coding product logic to it.
 - **FR-M2-018 Runtime environment requirements:** adapter declares required binaries, env vars, filesystem paths, and network access.
+- **FR-M2-019 External identity binding:** bind persistent agent identity to provider-specific remote persona (Forgejo user account, GitHub App bot) and secret references.
 
 ## 8. Non-Functional Requirements
 
@@ -80,7 +81,7 @@ A later task runs `Hephaestus` through a different harness while preserving agen
 
 ## 9. Domain Entities and Data Considerations
 
-Entities: `Agent`, `AgentRole`, `Capability`, `RuntimeAdapterType`, `RuntimeBinding`, `RuntimeSession`, `RuntimeCapabilitySnapshot`, `AgentExecution`, `RuntimeEvent`, `ArtifactReference`, `ModelExecutionMetadata`.
+Entities: `Agent`, `AgentRole`, `Capability`, `RuntimeAdapterType`, `RuntimeBinding`, `RuntimeSession`, `RuntimeCapabilitySnapshot`, `AgentExecution`, `RuntimeEvent`, `ArtifactReference`, `ModelExecutionMetadata`, `ExternalAgentIdentity`.
 
 Agent identity is long-lived. RuntimeBinding is task/session scoped. RuntimeSession may be resumable but must not become the durable source of task state. Store adapter version and capability snapshot for reproducibility.
 

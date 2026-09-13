@@ -320,7 +320,7 @@ An executable unit of work assigned to an agent or group. A task has lifecycle, 
 
 ### Agent
 
-Persistent identity independent from runtime. Stores role, capabilities, permissions, policy, history references, and group memberships.
+Persistent identity independent from runtime. Stores role, capabilities, permissions, policy, history references, group memberships, and external identity bindings (e.g. Forgejo user account or GitHub App bot persona).
 
 ### Runtime Binding
 
@@ -357,7 +357,7 @@ Human or policy gate for sensitive transitions such as commit, publish, PR, secr
 1. User connects Forgejo/GitHub repository.
 2. Control plane maintains or updates a local repository mirror.
 3. Issue is imported or selected.
-4. User or workflow assigns issue to an agent/group.
+4. User or workflow assigns issue to an agent/group, and remote issue assignee is updated to reflect the agent's remote persona.
 5. Control plane creates branch + worktree + workspace.
 6. Sandbox provider provisions a local Incus instance in MVP1 and attaches the workspace; later providers remain behind the same product boundary.
 7. Repository intelligence retrieves likely relevant code, tests, specs, and history.
@@ -370,8 +370,8 @@ Human or policy gate for sensitive transitions such as commit, publish, PR, secr
 14. Implementer revises until quality gates pass.
 15. Human inspects actual source diff in the product UI.
 16. User approves commit and/or publish according to policy.
-17. Git service commits/pushes using control-plane authority.
-18. PR is created in Forgejo/GitHub.
+17. Git service commits/pushes using control-plane authority with author attribution to the implementer agent.
+18. PR is created in Forgejo/GitHub authored by the implementer agent; specialist reviewer agents are assigned, posting native PR reviews and inline comments.
 19. CI status is tracked and correlated to the task/workspace.
 20. Workflow completes, workspace is retained or destroyed according to policy, and all actions remain auditable.
 
