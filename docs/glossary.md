@@ -116,9 +116,11 @@ them is a security defect, not a wording slip.
 | | |
 |---|---|
 | **Commit** | Create a local commit in the Workspace. No remote contact. |
-| **Publish** | Push a local branch to the remote, **through the control plane's Git credential** — never the agent sandbox's. |
+| **Publish** | Push a local branch to the remote, **through the control plane's brokered Git credential** mapped to the agent's remote persona — never the agent sandbox's directly. |
 | **Pull Request** | Create a PR on Forgejo/GitHub after Publish. |
 | **Merge** | Remote merge. Out of scope for autonomous action. |
+| **Remote Agent Identity** | An agent's persona on a remote Git host (Forgejo user account, GitHub App bot) brokered by the control plane. |
+| **Brokered Agent Identity** | Pattern where remote API actions (issue assignment, PR creation, inline review comments, approval verdicts) are executed by the control plane using least-privilege credentials tied to an agent's remote persona, keeping task sandboxes free of remote write credentials. |
 
 Do not write "push" when you mean Publish. "Push" is the Git verb; Publish is the
 governed product action that happens to use it.
@@ -181,6 +183,9 @@ replace reading the canonical source.
 | **Protected Action** | MVP4 | An action requiring explicit authorization and audit: commit, publish, PR, merge, secret access, expanded network access, model escalation. |
 | **Quality Gate** | MVP4 | A policy evaluation over tests, review verdicts, unresolved findings, and required approvals. Evaluations are versioned snapshots, never a mutable boolean. |
 | **Risk Acceptance** | MVP4 | A recorded, privileged waiver of a finding, with actor and reason. |
+| **Display Projection** | MVP4 | The asynchronous rendering of internal typed artifacts (such as `ReviewFinding` inline comments or deliberation round positions) onto external Git hosts (Forgejo/GitHub) at zero additional LLM token cost. |
+| **Bi-Directional Deliberation Sync** | MVP3 | Mutual synchronization between internal Agnest deliberation events and remote Git issue comments, where human comments ingest as priority context instructions. |
+
 
 ## 5. Intelligence and context
 

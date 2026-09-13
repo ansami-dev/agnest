@@ -26,6 +26,7 @@ This documentation bundle defines the full product vision and staged product req
 - `08-prd-mvp7-integrations-inference.md` — Forgejo/GitHub, MCP/tool integrations, inference gateway abstraction, 9Router/LiteLLM/direct providers/local models.
 - `09-prd-mvp8-governance-scale.md` — RBAC, policy, secrets, audit, multi-project/multi-user scale, resilience, compliance, enterprise controls.
 - `10-traceability-matrix.md` — roadmap and cross-MVP requirement traceability.
+- `remote-agent-identities-and-sdlc.md` — remote agent identities, brokered authentication, and human-like SDLC collaboration on Forgejo and GitHub.
 
 ## Intended downstream consumers
 

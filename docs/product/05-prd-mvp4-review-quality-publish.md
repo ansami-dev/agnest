@@ -60,9 +60,9 @@ Remote CI result is linked back to task/workspace. Failed CI may reopen workflow
 - **FR-M4-007 Quality gate:** evaluate tests, review verdicts, unresolved findings, required approvals.
 - **FR-M4-008 Local commit:** commit selected staged changes with controlled author/committer metadata policy.
 - **FR-M4-009 Commit approval:** optional/required approval independent from publish.
-- **FR-M4-010 Publish action:** push selected local branch through control-plane Git integration.
+- **FR-M4-010 Publish action:** push selected local branch through control-plane Git integration with implementer agent identity attribution.
 - **FR-M4-011 Remote branch collision handling:** detect divergence/name collision/non-fast-forward and require resolution.
-- **FR-M4-012 PR creation:** create Forgejo/GitHub pull request with generated/user-edited title/body and issue linkage.
+- **FR-M4-012 PR creation:** create Forgejo/GitHub pull request authored by implementer agent's remote persona with generated/user-edited title/body, issue linkage, and automated reviewer assignment.
 - **FR-M4-013 Remote state:** track unpublished, published, PR open, updated after publish, remote behind/ahead.
 - **FR-M4-014 CI status ingestion:** correlate checks/statuses to commit/PR.
 - **FR-M4-015 Post-publish update:** allow additional local commits and republish with explicit action.
@@ -71,6 +71,8 @@ Remote CI result is linked back to task/workspace. Failed CI may reopen workflow
 - **FR-M4-018 Human override:** accept risk/waive finding only with permission and reason.
 - **FR-M4-019 Diff size safeguards:** large/binary/generated-file handling and review warnings.
 - **FR-M4-020 PR artifact:** persist remote URL/ID/status and relation to local task/workspace.
+- **FR-M4-021 Remote review projection:** project internal ReviewFinding and review runs to native Forgejo/GitHub PR reviews with file/line inline comments and formal verdicts (`APPROVE`, `REQUEST_CHANGES`) as an asynchronous display projection, while internal review rework loops consume structured A2A ReviewFinding artifacts to preserve context efficiency.
+- **FR-M4-022 Remote issue synchronization:** synchronize task status and assignee to remote Forgejo/GitHub issue.
 
 ## 8. Non-Functional Requirements
 
@@ -82,7 +84,7 @@ Remote CI result is linked back to task/workspace. Failed CI may reopen workflow
 
 ## 9. Domain Entities and Data Considerations
 
-Entities: `ReviewRun`, `ReviewFinding`, `ReviewAnchor`, `QualityGate`, `QualityGateEvaluation`, `CommitIntent`, `CommitRecord`, `PublishRequest`, `PublishResult`, `RemoteBranchState`, `PullRequest`, `CIStatus`, `RiskAcceptance`.
+Entities: `ReviewRun`, `ReviewFinding`, `ReviewAnchor`, `QualityGate`, `QualityGateEvaluation`, `CommitIntent`, `CommitRecord`, `PublishRequest`, `PublishResult`, `RemoteBranchState`, `PullRequest`, `CIStatus`, `RiskAcceptance`, `RemoteReviewVerdict`.
 
 Store both local and remote commit SHA. Findings reference workspace revision/diff hash. Quality-gate evaluations are versioned snapshots, not a mutable single boolean.
 

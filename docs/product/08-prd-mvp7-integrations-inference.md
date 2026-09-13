@@ -50,7 +50,7 @@ User changes inference backend from direct provider to 9Router/LiteLLM without c
 
 ## 7. Functional Requirements
 
-- **FR-M7-001 GitProvider interface:** repo metadata, issue/PR, branch, status/checks, webhooks, comments as supported.
+- **FR-M7-001 GitProvider interface:** repo metadata, issue/PR, branch, status/checks, webhooks, comments, multi-user agent identity routing, and PR review submissions as supported.
 - **FR-M7-002 Forgejo provider:** complete targeted provider implementation.
 - **FR-M7-003 GitHub provider:** complete targeted provider implementation.
 - **FR-M7-004 MCP Server registry:** register endpoint/transport, capabilities, credentials, health, allowed roles/projects.
@@ -70,6 +70,7 @@ User changes inference backend from direct provider to 9Router/LiteLLM without c
 - **FR-M7-018 Capability negotiation:** model/tool/provider requirements validated before task starts.
 - **FR-M7-019 Integration health dashboard:** status/version/last error/credential expiry where available.
 - **FR-M7-020 Webhook event normalization:** external provider events map to typed internal events.
+- **FR-M7-021 Brokered agent identity provider:** execute remote repository operations on behalf of specific agent identities while keeping credential custody centralized in control plane.
 
 ## 8. Non-Functional Requirements
 

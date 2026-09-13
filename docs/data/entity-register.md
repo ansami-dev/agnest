@@ -72,6 +72,8 @@ columns, some value objects, some event payload fields. Modelling decisions land
 | `ENT-RuntimeEvent` | **RuntimeEvent** | A normalized activity event emitted by an adapter. Typed where the harness offers structure, raw text only as fallback. |
 | `ENT-ArtifactReference` | **ArtifactReference** | A pointer from an execution to an Artifact, so runtime output enters durable state without the transcript doing so. |
 | `ENT-ModelExecutionMetadata` | **ModelExecutionMetadata** | Actual model and provider used, where knowable. Recorded without product logic depending on it (P3). |
+| `ENT-ExternalAgentIdentity` | **ExternalAgentIdentity** | Provider-specific persona (Forgejo user, GitHub App bot) and credential reference bound to an Agent. |
+
 
 ---
 
@@ -117,6 +119,8 @@ columns, some value objects, some event payload fields. Modelling decisions land
 | `ENT-PullRequest` | **PullRequest** | A PR on Forgejo or GitHub: remote URL, ID, status, and its relation to the local Task and Workspace. |
 | `ENT-CIStatus` | **CIStatus** | A check or status result from the remote, correlated to a commit and thereby to a Task. |
 | `ENT-RiskAcceptance` | **RiskAcceptance** | A recorded, privileged waiver of a finding, with actor and reason. Immutable. |
+| `ENT-RemoteReviewVerdict` | **RemoteReviewVerdict** | Specialist review submission projected to Forgejo/GitHub PR with inline comments and formal verdict. |
+
 
 ---
 

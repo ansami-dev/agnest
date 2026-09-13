@@ -70,6 +70,8 @@ Control plane restarts mid-workflow; tasks/events/artifacts reconstruct current 
 - **FR-M3-018 Activity timeline:** reconstruct significant state from events/artifacts rather than raw transcript.
 - **FR-M3-019 Manual override:** pause, resume, skip with reason, reassign, cancel.
 - **FR-M3-020 Concurrency control:** prevent duplicate execution of same exclusive task stage.
+- **FR-M3-021 Bi-directional deliberation synchronization:** project deliberation group round positions to remote issue comments, and ingest authorized human comments from remote Git hosts as priority human instructions into the next round context pack.
+
 
 ## 8. Non-Functional Requirements
 
