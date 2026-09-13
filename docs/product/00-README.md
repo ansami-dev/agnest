@@ -56,7 +56,13 @@ python scripts/product_bundle.py build
 python scripts/product_bundle.py verify
 ```
 
-`verify` exits non-zero if a declared source is absent from the bundle, if the bundle contains a section with no declared source, or if any embedded section differs from its canonical file.
+Both commands check the declaration before reading or writing anything. Every `*.md` directly under `docs/product` — except the generated bundle itself — must be declared; names must be plain filenames (no absolute, traversal, or separator-bearing paths), and the bundle may not declare itself. `verify` exits non-zero if a product document is present but undeclared, if a declared source is absent from the bundle, if the bundle contains a section with no declared source, or if any embedded section differs from its canonical file.
+
+The regression tests cover unsafe declarations, an undeclared product document, and content drift:
+
+```sh
+python scripts/test_product_bundle.py
+```
 
 ## Intended downstream consumers
 

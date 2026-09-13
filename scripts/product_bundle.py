@@ -11,6 +11,10 @@ Commands::
     python scripts/product_bundle.py build    # regenerate the bundle
     python scripts/product_bundle.py verify   # fail (exit 1) on any drift
 
+The declaration is checked against the product-document inventory before any
+source is read or output is written, so the bundle can neither omit a product
+document nor embed a file from outside ``docs/product``.
+
 The verifier is offline and platform independent. It compares canonical text
 after normalising line endings to LF, because the repository normalises line
 endings through ``core.autocrlf`` and the committed form is LF.
@@ -30,6 +34,9 @@ HEADER = BUNDLE_TITLE + "\n\n\n---\n\n"
 SEPARATOR = "\n---\n\n"
 MARKER_RE = re.compile(r"<!-- SOURCE: ([^\n]+?) -->\n\n")
 SOURCES_RE = re.compile(r"<!-- BUNDLE-SOURCES\s*\n(.*?)-->", re.DOTALL)
+# A declared source is a plain product-document filename directly under
+# docs/product/: no separators, no traversal, no leading dot, must be Markdown.
+SOURCE_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\.md$")
 
 
 def canonical(text: str) -> str:
@@ -63,6 +70,66 @@ def declared_sources() -> list[str]:
     return names
 
 
+def product_inventory() -> list[str]:
+    """Return every canonical product document: *.md under docs/product, minus the bundle."""
+    return sorted(
+        entry.name
+        for entry in PRODUCT_DIR.glob("*.md")
+        if entry.is_file() and entry.name != BUNDLE_NAME
+    )
+
+
+def validate_declaration(names: list[str]) -> list[str]:
+    """Return every problem with the declared source list.
+
+    Rejects traversal, absolute and separator-bearing names, symlinks that
+    resolve outside ``docs/product``, the generated bundle itself, duplicates,
+    and any product document that is present but not declared.
+    """
+    problems: list[str] = []
+    product_root = PRODUCT_DIR.resolve()
+
+    seen: set[str] = set()
+    for name in names:
+        if name in seen:
+            continue
+        seen.add(name)
+        if name == BUNDLE_NAME:
+            problems.append("declared source is the generated bundle itself: " + name)
+            continue
+        if ".." in name or not SOURCE_NAME_RE.match(name):
+            problems.append(
+                "declared source must be a plain .md filename directly under "
+                f"docs/product: {name!r}"
+            )
+            continue
+        resolved = (PRODUCT_DIR / name).resolve()
+        if product_root not in resolved.parents:
+            problems.append(
+                f"declared source resolves outside docs/product: {name!r}"
+            )
+
+    duplicates = sorted({name for name in names if names.count(name) > 1})
+    if duplicates:
+        problems.append("duplicate declared sources: " + ", ".join(duplicates))
+
+    inventory = product_inventory()
+    inventory_set = set(inventory)
+    declared_set = set(names)
+    undeclared = [name for name in inventory if name not in declared_set]
+    if undeclared:
+        problems.append(
+            "product documents not declared in BUNDLE-SOURCES: " + ", ".join(undeclared)
+        )
+    absent = [name for name in names if name not in inventory_set]
+    if absent:
+        problems.append(
+            "declared sources that are not product documents on disk: "
+            + ", ".join(absent)
+        )
+    return problems
+
+
 def build_bundle(names: list[str]) -> str:
     """Return the exact bundle text for the declared source list."""
     parts = [HEADER]
@@ -90,28 +157,40 @@ def parse_sections(bundle: str) -> tuple[str, list[tuple[str, str]]]:
     return header, sections
 
 
+def report_failure(heading: str, problems: list[str]) -> int:
+    print(f"{heading} FAILED:", file=sys.stderr)
+    for problem in problems:
+        print(f"  - {problem}", file=sys.stderr)
+    print(
+        "\nRun 'python scripts/product_bundle.py build' and commit the result.",
+        file=sys.stderr,
+    )
+    return 1
+
+
 def command_build() -> int:
     names = declared_sources()
-    missing = [n for n in names if not (PRODUCT_DIR / n).is_file()]
-    if missing:
-        raise SystemExit("declared source files not found: " + ", ".join(missing))
+    problems = validate_declaration(names)
+    if problems:
+        return report_failure("product bundle build", problems)
     bundle = build_bundle(names)
     out = PRODUCT_DIR / BUNDLE_NAME
     with open(out, "w", encoding="utf-8", newline="\n") as handle:
         handle.write(bundle)
-    print(f"wrote {out.relative_to(REPO_ROOT)} from {len(names)} sources")
+    try:
+        shown = out.relative_to(REPO_ROOT)
+    except ValueError:
+        shown = out
+    print(f"wrote {shown} from {len(names)} sources")
     return 0
 
 
 def command_verify() -> int:
     names = declared_sources()
+    declaration_problems = validate_declaration(names)
+    problems = list(declaration_problems)
+
     bundle = read_canonical(PRODUCT_DIR / BUNDLE_NAME)
-    problems: list[str] = []
-
-    missing_files = [n for n in names if not (PRODUCT_DIR / n).is_file()]
-    if missing_files:
-        problems.append("declared source files not found: " + ", ".join(missing_files))
-
     header, sections = parse_sections(bundle)
     actual_names = [name for name, _ in sections]
 
@@ -132,28 +211,24 @@ def command_verify() -> int:
     if not missing and not extra and not duplicate and actual_names != names:
         problems.append("bundle section order does not match the declared order")
 
-    by_name: dict[str, str] = {}
-    for name, content in sections:
-        by_name.setdefault(name, content)
-    for name in names:
-        if name not in by_name or not (PRODUCT_DIR / name).is_file():
-            continue
-        expected = read_canonical(PRODUCT_DIR / name)
-        if by_name[name] != expected:
-            problems.append(f"content drift in embedded source: {name}")
+    if not declaration_problems:
+        by_name: dict[str, str] = {}
+        for name, content in sections:
+            by_name.setdefault(name, content)
+        for name in names:
+            if name not in by_name or not (PRODUCT_DIR / name).is_file():
+                continue
+            expected = read_canonical(PRODUCT_DIR / name)
+            if by_name[name] != expected:
+                problems.append(f"content drift in embedded source: {name}")
 
-    if not problems and bundle != build_bundle(names):
-        problems.append("bundle differs from a fresh build (formatting or trailing drift)")
+        if not problems and bundle != build_bundle(names):
+            problems.append(
+                "bundle differs from a fresh build (formatting or trailing drift)"
+            )
 
     if problems:
-        print("product bundle verification FAILED:", file=sys.stderr)
-        for problem in problems:
-            print(f"  - {problem}", file=sys.stderr)
-        print(
-            "\nRun 'python scripts/product_bundle.py build' and commit the result.",
-            file=sys.stderr,
-        )
-        return 1
+        return report_failure("product bundle verification", problems)
 
     print(
         f"product bundle OK: {len(names)} sources, "
