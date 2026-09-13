@@ -274,12 +274,17 @@ destruction.
   representation at every JSON boundary, including canonical JSON, protobuf JSON mapping,
   and public REST. This covers audit sequences, byte counts, nanosecond durations, and
   future int64 fields. OpenAPI spells these as `type: string`, `format: int64`, with a
-  decimal pattern and signed 64-bit range semantics; generated TypeScript therefore never
-  receives them as `number`. Fixtures include values above `2^53`. A JSON number is allowed
-  only when its schema declares an `int32`-bounded minimum and maximum.
-- Every durable instant is normalized to UTC and truncated—not rounded—to microsecond
-  precision before persistence, canonicalization, hashing, or transport. Its JSON/OpenAPI
-  text is RFC 3339 with the literal `Z` and exactly six fractional digits, for example
+  canonical pattern `^(0|-?[1-9][0-9]*)$` and signed 64-bit range semantics; `+`, leading
+  zeros, and `-0` are forbidden. Readers reject a non-canonical spelling rather than
+  normalizing it, so accepted values always match the stored bytes. Generated TypeScript
+  therefore never receives these values as `number`. Fixtures include values above `2^53`
+  and every forbidden spelling. A JSON number is allowed only when its schema declares an
+  `int32`-bounded minimum and maximum.
+- Every instant that crosses a contract boundary or becomes durable/evidentiary is
+  normalized to UTC and truncated—not rounded—to microsecond precision before persistence,
+  canonicalization, hashing, or transport. This includes request deadlines such as
+  `deadline_at`, not only stored timestamps. Its JSON/OpenAPI text is RFC 3339 with the
+  literal `Z` and exactly six fractional digits, for example
   `2026-09-14T10:00:00.000000Z`. PostgreSQL `timestamptz` preserves that precision; a
   protobuf timestamp's nanosecond component must be divisible by 1,000. A field that
   genuinely needs nanoseconds is an int64-domain duration/count value and follows the
@@ -307,12 +312,13 @@ do not create a parallel numbering scheme. Required gates include:
 - credential absence from `/proc/<pid>/environ`, arguments, config, logs, telemetry, and
   returned fields;
 - all four PostgreSQL constraint/query shapes and SQLSTATE mapping;
-- per-binary dependency closure, forbidden imports, `govulncheck` 1.8.0 binary-mode
-  vulnerability results, SPDX JSON SBOM, reproducibility, unchanged-input proof, and
-  package deployment evidence;
+- per-binary dependency closure, forbidden imports, `govulncheck` 1.8.0 source-mode
+  reachability results for each `cmd/` target, binary-mode vulnerability results for each
+  released Go artifact, SPDX JSON SBOM, reproducibility, unchanged-input proof, and package
+  deployment evidence;
 - RFC 8785 official vectors, an int64 value above `2^53` round-tripped through REST,
-  protobuf JSON, and canonical JSON without numeric conversion, and stored-byte stability
-  across an N-1 upgrade rehearsal;
+  protobuf JSON, and canonical JSON without numeric conversion, rejection of every
+  non-canonical decimal spelling, and stored-byte stability across an N-1 upgrade rehearsal;
 - equivalent instant inputs with offsets and varying fractional precision normalized before
   PostgreSQL, JSON/OpenAPI, and protobuf round trips to the fixed UTC microsecond value;
 - independent Git/workspace and Incus capacity exhaustion while PostgreSQL, blob, and
@@ -323,10 +329,21 @@ do not create a parallel numbering scheme. Required gates include:
 
 The pinned release tools are `govulncheck` 1.8.0, `golangci-lint` 2.13.2, nfpm 2.47.0,
 Syft 1.51.1, and Cosign 3.1.3 in addition to the generators already named. Inputs and
-hashes live in one checked-in toolchain/appliance manifest. Every released Go artifact is
-scanned in binary mode, and its embedded Go build information is inspected to prove that
-the actual compiler is at or above the minimum in §1; `go.mod`, `toolchain`, and
-`GOTOOLCHAIN` configuration alone are not accepted as that proof. Release outputs include
+hashes live in one checked-in toolchain/appliance manifest. `govulncheck` source mode uses
+the pinned release toolchain, build tags, and source revision to produce reachability
+evidence per `cmd/`; binary mode separately assesses what actually shipped. Every released
+Go artifact's embedded build information is inspected to prove that the actual compiler is
+at or above the minimum in §1; `go.mod`, `toolchain`, and `GOTOOLCHAIN` configuration alone
+are not accepted as that proof. The release gate evaluates the reported findings rather than
+assuming a zero process exit means a clean scan when a machine-readable output mode is used.
+
+Each vulnerability result records the database source, retrieval time, upstream
+last-modified identifier or equivalent immutable revision, and database content digest.
+The snapshot must have been retrieved from the declared source within 24 hours before the
+release gate begins; an offline mirror must identify that same recorded snapshot. A database
+that is unavailable, empty, not freshly retrieved under this rule, or unidentifiable makes
+the gate `BLOCKED`, never clean; the release evidence must distinguish “no affected
+vulnerability found” from “no trustworthy corpus scanned.” Release outputs include
 checksummed inspection archives, per-binary and frontend SBOMs, signatures, and provenance.
 A skipped required tier is `BLOCKED`, not passed.
 
@@ -403,8 +420,10 @@ A later change violates this ADR when any of the following is true:
 - a privileged binary imports a forbidden application, UI, persistence, forge, or other
   authority implementation dependency;
 - a released Go artifact records a compiler below the §1 floor, lacks extractable build
-  information, or is not scanned by the pinned `govulncheck` in binary mode;
-- rebuilding unchanged broker inputs changes its binary digest or a control-only patch
+  information, lacks corresponding source-mode reachability evidence, is not scanned by the
+  pinned `govulncheck` in binary mode, or its vulnerability result lacks a fresh identified
+  database snapshot;
+- rebuilding unchanged packaged-artifact inputs changes its digest, a control-only patch
   requires an unaffected broker restart, or any packaged artifact includes uncontrolled
   path, timestamp, or VCS metadata;
 - generated code differs after clean regeneration or generated DTOs enter domain packages;
@@ -414,9 +433,9 @@ A later change violates this ADR when any of the following is true:
 - credential bytes appear in process environment, arguments, Git configuration, logs,
   telemetry, or RPC output;
 - real PostgreSQL tests cannot enforce the four required SQL shapes atomically;
-- canonical audit bytes change on read/upgrade, a durable instant is not normalized to the
-  fixed microsecond UTC form before persistence, or an int64-domain value lacks the required
-  boundary encoding or explicit int32 schema bound;
+- canonical audit bytes change on read/upgrade, a boundary or durable instant is not
+  normalized to the fixed microsecond UTC form before use, or an int64-domain value lacks
+  the canonical spelling, boundary encoding, or explicit int32 schema bound;
 - OS/root temporary or scratch writes lack their declared bounds, or quarantine is reclaimed
   without the operator evidence and retention decision;
 - filling an untrusted storage allocation prevents the required PostgreSQL, blob, or
