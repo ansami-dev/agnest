@@ -64,6 +64,19 @@ This specification introduces the **Brokered Remote Agent Identity** model. Inst
 2. **Centralized Credential Custody:** Tokens corresponding to agent remote accounts are stored in the Control Plane Secret Store (`FR-M8-007`).
 3. **Brokered Execution:** When an agent produces an artifact (e.g. `ReviewFinding`, `PublishRequest`), the Control Plane verifies the quality gate / human approval, binds the action to that agent's `ExternalAgentIdentity`, and calls the remote Forgejo/GitHub API using the agent's brokered credentials.
 
+### 2.3 Dual-Layer Architecture: Execution Bus (A2A) vs Display Projection (Remote Git)
+
+A fundamental architectural principle governs all multi-agent interactions across both Workflow and Deliberation modes:
+
+1. **Internal Execution Bus (100% A2A & Typed Artifacts):**
+   - Agents communicate internally exclusively through **Agent2Agent (A2A)** semantics and typed structured artifacts (`ReviewFinding`, `ImplementationSummary`, `TestRun`, `Finding`).
+   - **Context Efficiency Guarantee (Principle P7):** Agents **never** scrape, fetch, or parse raw HTML/markdown comment threads from Forgejo/GitHub. Scraping remote threads would cause severe token bloat, parsing errors, hallucination, and prompt injection vulnerabilities.
+   - In rework loops (`FR-M3-014`), the Implementer Agent receives concise, structured `ReviewFinding` references within its role-tailored Context Pack (~50 tokens), avoiding thousands of wasted tokens on conversational overhead.
+2. **External Display Projection (Asynchronous Remote Git Sync):**
+   - Comments on PRs (inline hunk reviews) and Issues (round positions) are **asynchronous display projections** created by the Control Plane via provider REST APIs.
+   - Generating these remote comments costs **$0 and 0 additional LLM tokens**; it is pure backend API orchestration.
+   - This provides complete human-in-the-loop transparency on Forgejo/GitHub while preserving maximum context economics and speed in the agent runtime.
+
 ---
 
 ## 3. Remote Host Implementations
@@ -142,6 +155,20 @@ When multi-agent reasoning is required before implementation:
 3. **Structured Contributions:** In Round 1, each agent posts an independent position comment analyzing trade-offs, constraints, and risks.
 4. **Anti-Spam & Silence Guardrails (`FR-M3-012`):** Agents without novel input produce no comments ("silence is valid"). Chatty conversational pleasantries are prohibited.
 5. **Coordinator Synthesis & ADR PR (`FR-M3-008`):** The nominated coordinator summarizes consensus and unresolved trade-offs, then publishes a single ADR Pull Request.
+
+### 4.3 Bi-Directional Human Interaction: Remote Issue Comments vs Agnest Dashboard
+
+Agnest supports flexible, bi-directionally synchronized interaction for human engineers and Product Owners:
+
+1. **Interacting via Remote Issue Comments (Forgejo / GitHub):**
+   - Human leads can participate by commenting directly in the Forgejo/GitHub Issue or PR thread.
+   - External Webhook integration (`FR-M7-020`) validates the commenter identity and privileges (`author_association: OWNER | MEMBER`).
+   - The comment is ingested, normalized, and injected directly into the next deliberation or review round as a high-priority `HumanInstruction` within the agent Context Pack.
+   - Allows seamless participation from mobile devices or standard Git web interfaces without opening the Agnest dashboard.
+2. **Interacting via Agnest Dashboard UI (Experience Layer / Deliberation View):**
+   - Human leads can monitor deliberation or workflow progress in real-time within the Agnest desktop/web dashboard (`FR-M3-018`).
+   - Provides live token telemetry, per-agent cost breakdown, and rapid operational controls: **Pause**, **Resume**, **Force Finalize ADR**, or **Override**.
+   - Input entered in the Agnest dashboard is automatically synchronized and posted to the remote Forgejo Issue thread by the Control Plane to maintain complete historical transparency on Git.
 
 ---
 

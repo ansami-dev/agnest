@@ -183,6 +183,9 @@ replace reading the canonical source.
 | **Protected Action** | MVP4 | An action requiring explicit authorization and audit: commit, publish, PR, merge, secret access, expanded network access, model escalation. |
 | **Quality Gate** | MVP4 | A policy evaluation over tests, review verdicts, unresolved findings, and required approvals. Evaluations are versioned snapshots, never a mutable boolean. |
 | **Risk Acceptance** | MVP4 | A recorded, privileged waiver of a finding, with actor and reason. |
+| **Display Projection** | MVP4 | The asynchronous rendering of internal typed artifacts (such as `ReviewFinding` inline comments or deliberation round positions) onto external Git hosts (Forgejo/GitHub) at zero additional LLM token cost. |
+| **Bi-Directional Deliberation Sync** | MVP3 | Mutual synchronization between internal Agnest deliberation events and remote Git issue comments, where human comments ingest as priority context instructions. |
+
 
 ## 5. Intelligence and context
 

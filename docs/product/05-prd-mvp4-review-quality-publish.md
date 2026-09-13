@@ -71,7 +71,7 @@ Remote CI result is linked back to task/workspace. Failed CI may reopen workflow
 - **FR-M4-018 Human override:** accept risk/waive finding only with permission and reason.
 - **FR-M4-019 Diff size safeguards:** large/binary/generated-file handling and review warnings.
 - **FR-M4-020 PR artifact:** persist remote URL/ID/status and relation to local task/workspace.
-- **FR-M4-021 Remote review projection:** project internal ReviewFinding and review runs to native Forgejo/GitHub PR reviews with file/line inline comments and formal verdicts (`APPROVE`, `REQUEST_CHANGES`).
+- **FR-M4-021 Remote review projection:** project internal ReviewFinding and review runs to native Forgejo/GitHub PR reviews with file/line inline comments and formal verdicts (`APPROVE`, `REQUEST_CHANGES`) as an asynchronous display projection, while internal review rework loops consume structured A2A ReviewFinding artifacts to preserve context efficiency.
 - **FR-M4-022 Remote issue synchronization:** synchronize task status and assignee to remote Forgejo/GitHub issue.
 
 ## 8. Non-Functional Requirements
