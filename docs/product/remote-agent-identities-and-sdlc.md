@@ -1,8 +1,8 @@
 # Remote Agent Identities, Authentication, and Human-Like SDLC Collaboration
 
-**Status:** Proposed  
-**Owner:** Product / Integration  
-**Applies to:** Forgejo and GitHub integrations across MVP2, MVP3, MVP4, and MVP7  
+**Status:** Proposed
+**Owner:** Product / Integration
+**Applies to:** Forgejo and GitHub integrations across MVP2, MVP3, MVP4, and MVP7
 **Traceability:** `FR-M2-001`, `FR-M2-005`, `FR-M3-008`, `FR-M3-009`, `FR-M3-011`, `FR-M3-012`, `FR-M3-014`, `FR-M4-004`, `FR-M4-006`, `FR-M4-007`, `FR-M4-010`, `FR-M4-012`, `FR-M7-001`, `FR-M7-002`, `FR-M7-003`, `FR-M8-007`, `FR-M8-021`, `ADR-0003`
 
 ---
