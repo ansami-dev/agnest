@@ -73,9 +73,10 @@ renamed, or extended to a second provider.
 
 ## `NFR-` — Non-functional requirements · owner: first citing role
 
-Allocated when a PRD §8 clause first needs to be cited by ID.
+Allocated when a PRD §8 clause or a derived architectural constraint first needs to be
+cited by ID.
 
-| ID | PRD clause | Issue | Status |
+| ID | Requirement | Issue | Status |
 |---|---|---|---|
 | `NFR-M1-001` | Warm-mirror workspace creation latency | #18 | Active |
 | `NFR-M1-002` | Idempotent Git transitions or recoverable conflicts | #18 | Active |
@@ -84,3 +85,4 @@ Allocated when a PRD §8 clause first needs to be cited by ID.
 | `NFR-M1-005` | Path normalization and traversal protection | #18 | Active |
 | `NFR-M1-006` | Memory-bounded operation on large repositories | #18 | Active |
 | `NFR-M1-007` | Explicit intent and audit for destructive Git operations | #18 | Active |
+| `NFR-M1-008` | Appliance storage availability under untrusted execution | #18 | Reserved |
