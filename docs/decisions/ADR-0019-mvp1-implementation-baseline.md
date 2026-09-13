@@ -22,7 +22,7 @@ Selecting only convenient tools would leave the accepted security and durability
 boundaries as prose. Freezing every version indefinitely would instead make security
 maintenance impossible. This decision therefore distinguishes:
 
-- the sole Release Ready platform;
+- the sole release-ready platform;
 - exact bootstrap pins used to reproduce the first implementation;
 - supported patch lines and compatibility rules; and
 - evidence-based triggers for changing a component without reopening product identity.
@@ -36,7 +36,7 @@ demonstrated demand and a later decision with live conformance evidence.
 
 ### 1. Support one reference appliance
 
-MVP1 is Release Ready only on **Ubuntu Server 26.04 LTS `amd64`** with current security
+MVP1 is release-ready only on **Ubuntu Server 26.04 LTS `amd64`** with current security
 updates. The bootstrap and supported lines are:
 
 | Concern | Bootstrap pin | Supported policy |
@@ -91,8 +91,11 @@ systemd unit, restart path, and deployment decision.
 
 An unaffected broker is not deployed or restarted for a control-plane-only change when
 its source, reachable dependencies, generated RPC, toolchain, and artifact inputs are
-unchanged. Broker binaries use reproducible build inputs, `-trimpath`, and disabled VCS
-stamping. Source revision and provenance remain external package/build metadata.
+unchanged. All three Go binaries use reproducible build inputs, `-trimpath`, and disabled
+VCS stamping. The frontend build likewise excludes timestamps, host paths, and VCS metadata
+from content-addressed output. Source revision and provenance remain external package/build
+metadata. These rules apply to all four independently packaged artifacts, because their
+digests are release evidence rather than decorative metadata.
 
 The Go module must split before release if dependency versions diverge, unchanged-input
 proof is impossible, a security fix cannot be delivered to one authority independently,
@@ -147,8 +150,8 @@ regeneration diff. Additive public changes remain in `v1`; semantic breaks requi
 public major and an overlap period.
 
 Durable events remain versioned Agnest-native canonical JSON. Protobuf remains an RPC
-encoding. Identity, correlation, causation, tenant scope, and version semantics are
-defined once normatively and mapped explicitly into both encodings.
+encoding. Identity, correlation, causation, tenant scope, version, integer, and instant
+semantics are defined once normatively and mapped explicitly into both encodings.
 
 ### 5. Use narrow native adapters
 
@@ -209,9 +212,10 @@ embedded or containerized by Agnest. Package installation does not start a destr
 migration automatically.
 
 Each unit begins with `NoNewPrivileges=yes`, `ProtectSystem=strict`, `ProtectHome=yes`,
-`PrivateTmp=yes`, explicit writable paths and address families, a reduced
-`CapabilityBoundingSet`, and a syscall allow/deny policy. Issue #23 fixes the exact
-per-authority policy; Issue #27 owns operational thresholds and recovery.
+`PrivateTmp=yes`, a size-limited private temporary filesystem, bounded application scratch,
+explicit writable paths and address families, a reduced `CapabilityBoundingSet`, and a
+syscall allow/deny policy. Issue #23 fixes the exact per-authority policy; Issue #27 owns
+operational thresholds and recovery.
 
 Local gRPC uses Unix-domain sockets. Filesystem permissions are necessary but not
 sufficient: the broker reads `SO_PEERCRED` at connection acceptance and authorizes the
@@ -228,8 +232,10 @@ output is bounded artifact data and is not logged by default.
 A single unconstrained root filesystem is unsupported. The appliance provides five
 independently bounded consumers:
 
-1. OS/root, including journald, systemd state, private temporary space, and application
-   scratch; journald has an explicit size cap;
+1. OS/root, including journald and systemd state, on its own fixed-size thick-provisioned
+   volume; journald has an explicit size cap, each service's private temporary directory is
+   a size-limited tmpfs, and application scratch is confined to a bounded service path
+   rather than unconstrained root space;
 2. PostgreSQL data and WAL;
 3. the content-addressed blob root;
 4. Git mirrors, worktrees, and quarantine; and
@@ -246,6 +252,11 @@ or Incus capacity cannot breach PostgreSQL or blob capacity, and filling blob ca
 cannot breach PostgreSQL. Exact volume sizes, alerts, extension, and recovery procedures
 belong to Issue #27; per-Sandbox quotas and security policy belong to Issue #23.
 
+Quarantined work remains in the bounded Git/workspace allocation and continues to consume
+its capacity. Reclaiming it is an explicit operator action governed by the evidence and
+retention rules in Issues #26 and #27; quarantine never implies free capacity or automatic
+destruction.
+
 ### 9. Fix durable identifiers and canonical evidence
 
 - Primary entity IDs are application-generated UUIDv7 values, serialized as lowercase
@@ -259,10 +270,20 @@ belong to Issue #27; per-Sandbox quotas and security policy belong to Issue #23.
 - Audit canonicalization is RFC 8785 JCS, identified as `jcs-rfc8785` format version 1.
   The initial Go library is `github.com/gowebpki/jcs` 1.0.1 behind a canonicalizer port.
   Canonical bytes are stored at append time and never reconstructed as historical evidence.
-- Every int64-domain value in canonical JSON is encoded as a decimal JSON string,
-  including audit sequences, byte counts, nanosecond durations, and future int64 fields.
-  Fixtures include values above `2^53`. Small explicitly bounded integers may remain JSON
-  numbers.
+- Every durable or evidentiary int64-domain value uses the same signed decimal-string
+  representation at every JSON boundary, including canonical JSON, protobuf JSON mapping,
+  and public REST. This covers audit sequences, byte counts, nanosecond durations, and
+  future int64 fields. OpenAPI spells these as `type: string`, `format: int64`, with a
+  decimal pattern and signed 64-bit range semantics; generated TypeScript therefore never
+  receives them as `number`. Fixtures include values above `2^53`. A JSON number is allowed
+  only when its schema declares an `int32`-bounded minimum and maximum.
+- Every durable instant is normalized to UTC and truncated—not rounded—to microsecond
+  precision before persistence, canonicalization, hashing, or transport. Its JSON/OpenAPI
+  text is RFC 3339 with the literal `Z` and exactly six fractional digits, for example
+  `2026-09-14T10:00:00.000000Z`. PostgreSQL `timestamptz` preserves that precision; a
+  protobuf timestamp's nanosecond component must be divisible by 1,000. A field that
+  genuinely needs nanoseconds is an int64-domain duration/count value and follows the
+  decimal-string rule above.
 
 Canonical bytes preserve deterministic evidence but do not add a cryptographic or
 tamper-evidence claim beyond `ADR-0013`.
@@ -286,20 +307,28 @@ do not create a parallel numbering scheme. Required gates include:
 - credential absence from `/proc/<pid>/environ`, arguments, config, logs, telemetry, and
   returned fields;
 - all four PostgreSQL constraint/query shapes and SQLSTATE mapping;
-- per-binary dependency closure, forbidden imports, vulnerability report, SPDX JSON SBOM,
-  reproducibility, unchanged-input proof, and package deployment evidence;
-- RFC 8785 official vectors, values above `2^53`, and stored-byte stability across an N-1
-  upgrade rehearsal;
+- per-binary dependency closure, forbidden imports, `govulncheck` 1.8.0 binary-mode
+  vulnerability results, SPDX JSON SBOM, reproducibility, unchanged-input proof, and
+  package deployment evidence;
+- RFC 8785 official vectors, an int64 value above `2^53` round-tripped through REST,
+  protobuf JSON, and canonical JSON without numeric conversion, and stored-byte stability
+  across an N-1 upgrade rehearsal;
+- equivalent instant inputs with offsets and varying fractional precision normalized before
+  PostgreSQL, JSON/OpenAPI, and protobuf round trips to the fixed UTC microsecond value;
 - independent Git/workspace and Incus capacity exhaustion while PostgreSQL, blob, and
-  control-plane probes remain healthy; and
+  control-plane probes remain healthy, with storage-boundary/reserve readings and the
+  normalized limit outcome retained as evidence; and
 - package install, controlled upgrade, interrupted upgrade/retry, backup/restore, remove,
   and forward-repair smoke tests.
 
-The pinned release tools are `golangci-lint` 2.13.2, nfpm 2.47.0, Syft 1.51.1, and
-Cosign 3.1.3 in addition to the generators already named. Inputs and hashes live in one
-checked-in toolchain/appliance manifest. Release outputs include checksummed inspection
-archives, per-binary and frontend SBOMs, signatures, and provenance. A skipped required
-tier is `BLOCKED`, not passed.
+The pinned release tools are `govulncheck` 1.8.0, `golangci-lint` 2.13.2, nfpm 2.47.0,
+Syft 1.51.1, and Cosign 3.1.3 in addition to the generators already named. Inputs and
+hashes live in one checked-in toolchain/appliance manifest. Every released Go artifact is
+scanned in binary mode, and its embedded Go build information is inspected to prove that
+the actual compiler is at or above the minimum in §1; `go.mod`, `toolchain`, and
+`GOTOOLCHAIN` configuration alone are not accepted as that proof. Release outputs include
+checksummed inspection archives, per-binary and frontend SBOMs, signatures, and provenance.
+A skipped required tier is `BLOCKED`, not passed.
 
 The minimum Go patch moves immediately when a security-sensitive standard-library
 primitive requires a fixed patch. A supported-line security update is an ordinary reviewed
@@ -357,20 +386,27 @@ transaction-visible constraints.
 
 ## Unresolved questions
 
-None. Security policy details remain delegated to Issue #23, physical data design to
-Issue #22, upgrade/recovery procedures to Issues #26 and #27, and public/RPC contract
-details to Issues #24 and #25. Those issues implement this decision; they do not reopen it.
+| Question | Position | Held by | Resolution |
+|---|---|---|---|
+| None | — | — | — |
+
+Security policy details remain delegated to Issue #23, physical data design to Issue #22,
+upgrade/recovery procedures to Issues #26 and #27, and public/RPC contract details to
+Issues #24 and #25. Those issues implement this decision; they do not reopen it.
 
 ## Verification
 
 A later change violates this ADR when any of the following is true:
 
-- a Release Ready artifact or claim targets a platform other than Ubuntu Server 26.04
+- a release-ready artifact or claim targets a platform other than Ubuntu Server 26.04
   LTS `amd64` without a successor decision and live evidence;
 - a privileged binary imports a forbidden application, UI, persistence, forge, or other
   authority implementation dependency;
+- a released Go artifact records a compiler below the §1 floor, lacks extractable build
+  information, or is not scanned by the pinned `govulncheck` in binary mode;
 - rebuilding unchanged broker inputs changes its binary digest or a control-only patch
-  requires an unaffected broker restart;
+  requires an unaffected broker restart, or any packaged artifact includes uncontrolled
+  path, timestamp, or VCS metadata;
 - generated code differs after clean regeneration or generated DTOs enter domain packages;
 - a path-bearing operation falls back to string-prefix containment, or Git receives an
   untrusted independently resolved repository path;
@@ -378,8 +414,11 @@ A later change violates this ADR when any of the following is true:
 - credential bytes appear in process environment, arguments, Git configuration, logs,
   telemetry, or RPC output;
 - real PostgreSQL tests cannot enforce the four required SQL shapes atomically;
-- canonical audit bytes change on read/upgrade, or an int64-domain value is encoded as a
-  JSON number;
+- canonical audit bytes change on read/upgrade, a durable instant is not normalized to the
+  fixed microsecond UTC form before persistence, or an int64-domain value lacks the required
+  boundary encoding or explicit int32 schema bound;
+- OS/root temporary or scratch writes lack their declared bounds, or quarantine is reclaimed
+  without the operator evidence and retention decision;
 - filling an untrusted storage allocation prevents the required PostgreSQL, blob, or
   control-plane probes; or
 - a required live, failure, migration, security, compatibility, or supply-chain gate is
@@ -392,4 +431,5 @@ A later change violates this ADR when any of the following is true:
 - `ADR-0011`: local Incus provider for MVP1
 - `ADR-0013`: product-wide technology architecture
 - Go path-confinement fix: [GO-2026-4970](https://pkg.go.dev/vuln/GO-2026-4970)
+- Go binary vulnerability scanner: [govulncheck](https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck)
 - JSON Canonicalization Scheme: [RFC 8785](https://www.rfc-editor.org/rfc/rfc8785)
